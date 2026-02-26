@@ -8,6 +8,13 @@
       "when": 1772046262600,
       "tag": "0000_naive_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772125981490,
+      "tag": "0001_light_serpent_society",
+      "breakpoints": true
     }
   ]
 }
