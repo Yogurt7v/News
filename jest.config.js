@@ -8,7 +8,6 @@ const config = {
   testMatch: [
     '<rootDir>/src/**/*.test.{ts,tsx}', // ищем тесты в src с суффиксом .test
   ],
-  testEnvironment: 'jsdom',
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
