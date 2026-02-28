@@ -1,7 +1,8 @@
-import NextAuth, { AuthOptions } from 'next-auth';
+import { DrizzleAdapter } from '@/lib/auth/drizzle-adapter';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
-import { DrizzleAdapter } from '@/lib/auth/drizzle-adapter';
+import YandexProvider from 'next-auth/providers/yandex';
+import NextAuth, { AuthOptions } from 'next-auth';
 
 export const authOptions: AuthOptions = {
   adapter: DrizzleAdapter(),
@@ -16,6 +17,13 @@ export const authOptions: AuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      httpOptions: {
+        timeout: 10000,
+      },
+    }),
+    YandexProvider({
+      clientId: process.env.YANDEX_CLIENT_ID!,
+      clientSecret: process.env.YANDEX_CLIENT_SECRET!,
       httpOptions: {
         timeout: 10000,
       },

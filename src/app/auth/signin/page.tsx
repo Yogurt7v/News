@@ -3,6 +3,8 @@
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import YandexLogo from '../../../../public/yandex-svg.svg';
+import Image from 'next/image';
 
 function SignInContent() {
   const searchParams = useSearchParams();
@@ -91,6 +93,25 @@ function SignInContent() {
                 />
               </svg>
               <span>Войти через Google</span>
+            </button>
+
+            {/* Yandex */}
+            <button
+              onClick={() => signIn('yandex', { callbackUrl })}
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#4f4f52] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-[#39393c] active:scale-[0.99]"
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 256 512"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#ca0707"
+                  d="M153.1 315.8L65.7 512H2l96-209.8c-45.1-22.9-75.2-64.4-75.2-141.1C22.7 53.7 90.8 0 171.7 0H254v512h-55.1V315.8zm45.8-269.3h-29.4c-44.4 0-87.4 29.4-87.4 114.6c0 82.3 39.4 108.8 87.4 108.8h29.4z"
+                />
+              </svg>
+              <span>Войти через Яндекс</span>
             </button>
 
             {/* GitHub */}
