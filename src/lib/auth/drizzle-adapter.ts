@@ -16,6 +16,7 @@ import {
 } from '@/db/schema';
 
 import { InferSelectModel } from 'drizzle-orm';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 type DbUser = InferSelectModel<typeof users>;
 type DbSession = InferSelectModel<typeof sessions>;
@@ -44,7 +45,9 @@ function mapSession(session: DbSession): AdapterSession {
   };
 }
 
-export function DrizzleAdapter(): Adapter {
+export function DrizzleAdapter(
+  db: PostgresJsDatabase<typeof schema>
+): Adapter {
   return {
     /* ---------- USERS ---------- */
 
