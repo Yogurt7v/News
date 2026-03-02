@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:test": "tsx src/db/test.ts",
+    "telegram:test": "tsx src/shared/api/telegram/test.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -26,7 +27,8 @@
     "next-auth": "^4.24.13",
     "pg": "^8.19.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "telegram": "^2.26.22"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
