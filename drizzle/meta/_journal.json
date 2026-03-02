@@ -15,6 +15,13 @@
       "when": 1772125981490,
       "tag": "0001_light_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772469003393,
+      "tag": "0002_cute_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

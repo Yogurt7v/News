@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import YandexLogo from '../../../../public/yandex-svg.svg';
 import Image from 'next/image';
+import Link from 'next/link';
 
 function SignInContent() {
   const searchParams = useSearchParams();
@@ -134,9 +135,14 @@ function SignInContent() {
             </button>
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
-            После входа вы будете перенаправлены обратно
-          </p>
+          <div className="flex items-center justify-center">
+            <Link
+              href="/auth/register"
+              className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500 hover:underline"
+            >
+              Зарегистрироваться
+            </Link>
+          </div>
         </div>
       </div>
     </div>

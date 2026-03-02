@@ -16,9 +16,10 @@ export const roleEnum = pgEnum('role', ['user', 'admin']);
 
 // Таблица пользователей
 export const users = pgTable('users', {
-  id: text('id').primaryKey().unique(),
+  id: text('id').primaryKey().notNull(),
   email: text('email').notNull().unique(),
   emailVerified: timestamp('email_verified', { mode: 'date' }),
+  password: text('password').notNull(),
   name: text('name'),
   image: text('image'),
   role: roleEnum('role').default('user'),
