@@ -169,7 +169,7 @@ function SignInContent() {
                 {/* GitHub */}
                 <button
                   onClick={() => signIn('github', { callbackUrl })}
-                  className="w-full flex items-center justify-center gap-3 rounded-xl bg-[#229ED9] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#1b8ec2] active:scale-[0.98] shadow-sm shadow-blue-500/20"
+                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98]"
                 >
                   <svg
                     className="h-5 w-5"
