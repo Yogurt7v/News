@@ -27,7 +27,7 @@ async function generateSessionString() {
     console.log(sessionString);
     console.log('--------------------------------------------------\n');
 
-    await tg.close();
+    await tg.destroy();
   } catch (err) {
     console.error('❌ Ошибка:', err);
   }
