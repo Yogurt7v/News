@@ -12,6 +12,7 @@
     "db:test": "tsx src/db/test.ts",
     "telegram:test": "tsx src/shared/api/telegram/test.ts",
     "telegram:mtcute": "tsx src/shared/api/telegram-mtcute/test.ts",
+    "telegram:parse": "tsx src/features/telegram-parser/test.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -21,6 +22,7 @@
   "dependencies": {
     "@auth/core": "^0.34.3",
     "@mtcute/node": "^0.28.1",
+    "@mtcute/wasm": "^0.27.8",
     "@paralleldrive/cuid2": "^3.3.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",

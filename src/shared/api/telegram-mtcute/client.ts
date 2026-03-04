@@ -1,36 +1,55 @@
-import { TelegramClient } from '@mtcute/node';
-import { MemoryStorage } from '@mtcute/core'; // Используем память, а не файл
-import QRcode from 'qrcode-terminal';
 import 'dotenv/config';
+import '@mtcute/wasm';
+import {
+  MemoryStorage,
+  SqliteStorage,
+  TelegramClient,
+} from '@mtcute/node';
+import QRcode from 'qrcode-terminal';
+import path from 'path';
+import fs from 'fs';
 
+const sessionDir = path.join(process.cwd(), 'sessions');
+if (!fs.existsSync(sessionDir)) {
+  fs.mkdirSync(sessionDir, { recursive: true });
+}
+
+// Читаем переменные окружения
+const apiId = Number(process.env.TELEGRAM_API_ID);
+const apiHash = process.env.TELEGRAM_API_HASH!;
+
+const storage = new SqliteStorage(path.join(sessionDir, 'tg-session.db'));
+
+// Создаём клиент с файловым хранилищем (сессия сохраняется в session/telegram.json)
 const tg = new TelegramClient({
-  apiId: Number(process.env.TELEGRAM_API_ID),
-  apiHash: process.env.TELEGRAM_API_HASH!,
-  storage: new MemoryStorage(), // Данные не сохраняются в файл
+  apiId,
+  apiHash,
+  storage, // данные сохраняются в файл
 });
 
-async function generateSessionString() {
-  try {
+// Функция для получения уже авторизованного клиента
+export async function getTelegramClient(): Promise<TelegramClient> {
+  // Если клиент ещё не запущен, запускаем
+  if (!tg.isActive) {
+    console.log('\n🔐 Требуется авторизация в Telegram');
+    console.log(
+      'Отсканируйте QR-код в приложении Telegram (Настройки → Устройства → Сканировать QR-код)\n'
+    );
+
     await tg.start({
       qrCodeHandler: (url) => {
-        console.log('--- ОТСКАНИРУЙТЕ QR-КОД В TELEGRAM ---');
         QRcode.generate(url, { small: true });
+        console.log(
+          '\nИли перейдите по ссылке (если QR не отображается):',
+          url
+        );
       },
       password: () => tg.input('Введите пароль 2FA (если есть): '),
     });
 
-    // Генерируем строку сессии
-    const sessionString = await tg.exportSession();
-
-    console.log('\n✅ АВТОРИЗАЦИЯ УСПЕШНА!');
-    console.log('\n--- ВАША СТРОКА СЕССИИ (СКОПИРУЙТЕ ПОЛНОСТЬЮ) ---');
-    console.log(sessionString);
-    console.log('--------------------------------------------------\n');
-
-    await tg.destroy();
-  } catch (err) {
-    console.error('❌ Ошибка:', err);
+    console.log('\n✅ Авторизация успешна! Сессия сохранена в файл.');
+  } else {
+    console.log('🔑 Используется сохранённая сессия Telegram');
   }
+  return tg;
 }
-
-generateSessionString();
