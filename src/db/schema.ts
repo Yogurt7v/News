@@ -2,7 +2,6 @@ import {
   pgTable,
   text,
   timestamp,
-  varchar,
   integer,
   pgEnum,
   uuid,
@@ -105,6 +104,17 @@ export const news = pgTable('news', {
   analyzedAt: timestamp('analyzed_at'),
 });
 
+export const media = pgTable('media', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  newsId: uuid('news_id')
+    .notNull()
+    .references(() => news.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'photo', 'video', 'document'
+  url: text('url').notNull(),
+  order: integer('order').notNull().default(0), // порядок в сообщении
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Отношения
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
@@ -123,10 +133,18 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   news: many(news),
 }));
 
-export const newsRelations = relations(news, ({ one }) => ({
+export const newsRelations = relations(news, ({ one, many }) => ({
   category: one(categories, {
     fields: [news.categoryId],
     references: [categories.id],
+  }),
+  media: many(media),
+}));
+
+export const mediaRelations = relations(media, ({ one }) => ({
+  news: one(news, {
+    fields: [media.newsId],
+    references: [news.id],
   }),
 }));
 
