@@ -35,7 +35,7 @@ export class TelegramParserService {
   ): Promise<TelegramPost[]> {
     // В mtcute getHistory — основной метод получения постов
     const messages = await client.getHistory(channelUsername, { limit });
-
+    console.log(messages[0]);
     return messages.map((msg) => ({
       id: msg.id,
       date: msg.date,

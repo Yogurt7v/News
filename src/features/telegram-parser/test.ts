@@ -8,13 +8,13 @@ async function test() {
     const channels = getChannelsList();
     console.log('Каналы для парсинга:', channels);
 
-    const savedCount = await telegramParser.fetchAndSaveNews(channels, 3);
+    const savedCount = await telegramParser.fetchAndSaveNews(channels, 10);
     console.log(`✅ Сохранено ${savedCount} новых новостей`);
 
     // Проверим, что в базе появились новости
     const { db } = await import('@/db');
     const allNews = await db.query.news.findMany({
-      limit: 5,
+      limit: 10,
       orderBy: (news, { desc }) => [desc(news.publishedAt)],
     });
     console.log(
