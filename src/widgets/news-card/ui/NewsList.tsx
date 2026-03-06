@@ -13,6 +13,8 @@ export function NewsList({ initialNews }: NewsListProps) {
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 10);
 
+  console.log(news);
+
   const loadMore = async () => {
     startTransition(async () => {
       const res = await fetch(`/api/news?offset=${news.length}&limit=10`);

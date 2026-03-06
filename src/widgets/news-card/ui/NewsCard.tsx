@@ -24,10 +24,10 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       )}
       <div className="p-4">
-        <h2 className="text-xl font-semibold mb-2 line-clamp-2">
+        <h2 className="text-xl font-semibold mb-2 line-clamp-3">
           {news.title}
         </h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-3 line-clamp-3">
+        <p className="text-gray-600 dark:text-gray-300 mb-3">
           {news.content}
         </p>
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
