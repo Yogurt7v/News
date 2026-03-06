@@ -6,7 +6,6 @@ import { telegramParser } from './parser.service';
 async function test() {
   try {
     const channels = getChannelsList();
-    console.log('Каналы для парсинга:', channels);
 
     const savedCount = await telegramParser.fetchAndSaveNews(channels, 10);
     console.log(`✅ Сохранено ${savedCount} новых новостей`);
@@ -16,11 +15,20 @@ async function test() {
     const allNews = await db.query.news.findMany({
       limit: 10,
       orderBy: (news, { desc }) => [desc(news.publishedAt)],
+      with: {
+        media: true,
+      },
     });
-    console.log(
-      'Последние новости в БД:',
-      allNews.map((n) => ({ title: n.title, source: n.source }))
-    );
+    allNews.forEach((n) => {
+      console.log(`- [${n.source}] ${n.title}`);
+      if (n.media && n.media.length > 0) {
+        n.media.forEach((m) =>
+          console.log(`  📸 Медиа (${m.type}): ${m.url}`)
+        );
+      } else {
+        console.log(`  ⚠️ У этой новости НЕТ медиа в базе`);
+      }
+    });
   } catch (error) {
     console.error('❌ Ошибка:', error);
   }

@@ -6,14 +6,13 @@ import { NewsWithMedia } from '@/entities/news/types';
 
 interface NewsListProps {
   initialNews: NewsWithMedia[];
+  currentChannel?: string; // Пропс для фильтрации в API
 }
 
-export function NewsList({ initialNews }: NewsListProps) {
+export function NewsList({ initialNews, currentChannel }: NewsListProps) {
   const [news, setNews] = useState(initialNews);
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 10);
-
-  console.log(news);
 
   const loadMore = async () => {
     startTransition(async () => {
@@ -27,7 +26,6 @@ export function NewsList({ initialNews }: NewsListProps) {
   return (
     <div className="flex flex-col gap-4 pb-10">
       {news.map((item) => (
-        // Контейнер для имитации "бабла" сообщения
         <div
           key={item.id}
           className="transition-transform active:scale-[0.99]"
