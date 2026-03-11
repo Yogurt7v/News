@@ -16,5 +16,11 @@ export default withAuth(
 
 export const config = {
   // Список защищенных путей
-  matcher: ['/profile', '/bookmarks', '/subscriptions', '/admin/:path*'],
+  matcher: [
+    '/',
+    '/profile',
+    '/bookmarks',
+    '/subscriptions',
+    '/admin/:path*',
+  ],
 };

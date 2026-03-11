@@ -22,7 +22,8 @@ function RegisterContent() {
 
     try {
       // 1. Отправляем данные на ваш API роут регистрации
-      const res = await fetch('/api/register', {
+
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name }),
         headers: { 'Content-Type': 'application/json' },
@@ -45,8 +46,8 @@ function RegisterContent() {
       if (loginRes?.error) {
         router.push('/auth/signin');
       } else {
-        router.push('/');
         router.refresh();
+        router.push('/');
       }
     } catch (err: any) {
       setError(err.message || 'Что-то пошло не так');
