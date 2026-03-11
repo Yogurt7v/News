@@ -115,6 +115,28 @@ export const media = pgTable('media', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    // Колонка: ID пользователя (ссылается на таблицу users)
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // onDelete: 'cascade' означает: если пользователь удалится, все его подписки тоже удалятся автоматически
+
+    // Колонка: имя канала (просто текст)
+    channelUsername: text('channel_username').notNull(),
+
+    // Колонка: дата и время подписки (по умолчанию — текущее время)
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Составной первичный ключ: гарантирует, что один пользователь не может
+    // подписаться на один и тот же канал дважды
+    pk: primaryKey({ columns: [table.userId, table.channelUsername] }),
+  })
+);
+
 // Отношения
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),

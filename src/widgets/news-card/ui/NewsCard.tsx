@@ -41,11 +41,11 @@ export function NewsCard({ news }: NewsCardProps) {
           </div>
         )}
 
-        <div className="p-5 flex flex-col flex-grow">
-          <h2 className="text-lg font-bold mb-2 line-clamp-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">
+        <div className="p-5 flex flex-col grow">
+          <h2 className="text-2xl font-bold mb-2 line-clamp-3 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">
             {news.title}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 text-sm flex-grow">
+          <p className="text-gray-600 dark:text-gray-400 mb-4  text-lg grow">
             {news.content}
           </p>
 
