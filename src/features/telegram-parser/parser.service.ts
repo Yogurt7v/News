@@ -1,10 +1,11 @@
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
 import { db } from '@/db';
 import { media, news } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import { TelegramClient } from '@mtcute/node'; // Добавьте импорт типа
 import fs from 'fs/promises';
 import path from 'path';
+import process from 'process';
 
 export interface TelegramPost {
   id: number;
@@ -285,6 +286,56 @@ export class TelegramParserService {
     return savedCount;
   }
 
+  async cleanupOldMedia(days: number): Promise<void> {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - days);
+
+    console.log(
+      `🧹 [Cleanup] Начинаю очистку медиа старше ${days} дней (до ${thresholdDate.toISOString()})`
+    );
+
+    try {
+      // 1. Находим в БД все медиа, которые старше порога
+      // Важно: мы ориентируемся на дату создания записи в БД
+      const oldMediaEntries = await db.query.media.findMany({
+        where: lt(media.createdAt, thresholdDate),
+      });
+
+      if (oldMediaEntries.length === 0) {
+        console.log('🧹 [Cleanup] Старых медиа не обнаружено.');
+        return;
+      }
+
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+
+      for (const entry of oldMediaEntries) {
+        // У тебя в поле url хранится путь типа "/uploads/file.jpg"
+        // Нам нужно вытащить только имя файла
+        const fileName = path.basename(entry.url);
+        const filePath = path.join(uploadDir, fileName);
+
+        try {
+          // 2. Удаляем файл с диска
+          await fs.access(filePath); // Проверяем, существует ли он
+          await fs.unlink(filePath);
+          console.log(`🗑️  Файл удален: ${fileName}`);
+        } catch (e) {
+          console.log(`⚠️  Файл уже отсутствует на диске: ${fileName}`);
+        }
+      }
+
+      // 3. Удаляем записи из БД (одним запросом)
+      const deletedIds = oldMediaEntries.map((m) => m.id);
+      await db.delete(media).where(lt(media.createdAt, thresholdDate));
+
+      console.log(
+        `✅ [Cleanup] Удалено записей из БД: ${deletedIds.length}`
+      );
+    } catch (error) {
+      console.error('❌ [Cleanup] Ошибка при очистке:', error);
+    }
+  }
+
   /**
    * Основной метод
    */
@@ -294,6 +345,7 @@ export class TelegramParserService {
 
     limitPerChannel: number = 5
   ): Promise<number> {
+    await this.cleanupOldMedia(parseInt(process.env.MEDIA_GETS_OLD!));
     const posts = await this.getMultipleChannelsPosts(
       channels,
 

@@ -135,8 +135,6 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
                 src={current.url}
                 controls
                 autoPlay
-                // w-full h-full заставляет видео занять всё место контейнера
-                // object-contain гарантирует сохранение пропорций без обрезки
                 className="w-full h-full object-contain outline-none"
               />
             </div>
