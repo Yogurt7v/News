@@ -38,7 +38,7 @@ export function NewsCard({ news }: NewsCardProps) {
                 <div className="relative w-full h-full">
                   <video
                     src={mainMedia.url}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-сontain"
                     muted
                     playsInline
                   />
@@ -59,7 +59,7 @@ export function NewsCard({ news }: NewsCardProps) {
                   src={mainMedia.url}
                   alt={news.title}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   sizes="(max-width: 768px) 100vw, 700px"
                 />
               )}

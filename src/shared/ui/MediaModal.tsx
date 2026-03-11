@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { createPortal } from 'react-dom'; // Для рендеринга поверх всего
+import { createPortal } from 'react-dom';
 import { NewsWithMedia } from '@/entities/news/types';
 
 interface MediaModalProps {
@@ -45,21 +45,19 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
 
   const current = media[currentIndex];
 
-  // Используем Portal, чтобы модалка не зависела от стилей родителя
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md"
-      onClick={onClose} // Клик по фону закроет окно
+      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95 backdrop-blur-md"
+      onClick={onClose}
     >
-      {/* Контейнер контента (останавливаем клик, чтобы не закрывалось при нажатии на фото) */}
       <div
-        className="relative w-full h-full flex items-center justify-center p-4"
+        className="relative w-full h-full flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка Закрыть */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[110] p-2 bg-white/10 rounded-full"
+          className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-110 p-2 bg-white/10 hover:bg-white/20 rounded-full"
         >
           <svg
             className="w-8 h-8"
@@ -76,12 +74,12 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           </svg>
         </button>
 
-        {/* Навигация */}
+        {/* Навигация (скрываем фон кнопок на мобилках для чистоты) */}
         {media.length > 1 && (
           <>
             <button
               onClick={prev}
-              className="absolute left-4 md:left-10 p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all z-[110]"
+              className="absolute left-2 md:left-6 p-4 rounded-full bg-black/20 hover:bg-white/10 text-white transition-all z-110"
             >
               <svg
                 className="w-8 h-8"
@@ -99,7 +97,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
             </button>
             <button
               onClick={next}
-              className="absolute right-4 md:right-10 p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all z-[110]"
+              className="absolute right-2 md:right-6 p-4 rounded-full bg-black/20 hover:bg-white/10 text-white transition-all z-110"
             >
               <svg
                 className="w-8 h-8"
@@ -118,8 +116,8 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           </>
         )}
 
-        {/* Отображение Медиа */}
-        <div className="relative w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center">
+        {/* Основной контейнер медиа */}
+        <div className="relative w-[95vw] h-[90vh] flex items-center justify-center">
           {current.type === 'photo' ? (
             <div className="relative w-full h-full">
               <Image
@@ -128,20 +126,25 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
                 fill
                 className="object-contain"
                 priority
+                sizes="100vw"
               />
             </div>
           ) : (
-            <video
-              src={current.url}
-              controls
-              autoPlay
-              className="max-w-full max-h-full rounded-lg"
-            />
+            <div className="w-full h-full flex items-center justify-center">
+              <video
+                src={current.url}
+                controls
+                autoPlay
+                // w-full h-full заставляет видео занять всё место контейнера
+                // object-contain гарантирует сохранение пропорций без обрезки
+                className="w-full h-full object-contain outline-none"
+              />
+            </div>
           )}
         </div>
 
         {/* Индикатор */}
-        <div className="absolute bottom-10 px-4 py-1 bg-white/10 rounded-full text-white/70 text-sm backdrop-blur-sm">
+        <div className="absolute bottom-6 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full text-white/90 text-sm backdrop-blur-md font-medium">
           {currentIndex + 1} / {media.length}
         </div>
       </div>
