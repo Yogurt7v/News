@@ -45,39 +45,63 @@ export class TelegramParserService {
       `📩 [getChannelPosts] Получено из API: ${messages.length} объектов`
     );
 
-    const posts: TelegramPost[] = [];
+    const groupedMessages = new Map<string, any[]>();
 
     for (const msg of messages) {
-      if (!msg.text && !msg.media) {
-        console.log(
-          `   ⏭️ Пропуск ID ${msg.id}: пустое или служебное сообщение`
-        );
+      // Если это часть альбома, используем groupedId, иначе уникальный id сообщения
+      const groupId = msg.groupedId
+        ? `group_${msg.groupedId.toString()}`
+        : `single_${msg.id}`;
+
+      if (!groupedMessages.has(groupId)) {
+        groupedMessages.set(groupId, []);
+      }
+      groupedMessages.get(groupId)!.push(msg);
+    }
+    const posts: TelegramPost[] = [];
+
+    for (const [groupId, msgs] of groupedMessages) {
+      // Сортируем сообщения в группе по ID, чтобы текст (обычно он в первом) был предсказуем
+      msgs.sort((a, b) => a.id - b.id);
+
+      const mainMsg = msgs[0]; // Берем первое сообщение как основу
+
+      // Собираем текст из всех сообщений группы (на случай, если подписи разные,
+      // хотя в ТГ подпись обычно одна на весь альбом)
+      const fullText = msgs
+        .map((m) => m.text || '')
+        .filter(Boolean)
+        .join('\n');
+
+      if (!fullText && !msgs.some((m) => m.media)) {
         continue;
       }
 
       console.log(
-        `🔹 Обработка ID: ${msg.id} | Текст: ${msg.text?.slice(0, 20)}...`
+        `🔹 Обработка ${groupId} | Сообщений в группе: ${msgs.length}`
       );
 
-      const extractedMedia = await this.extractAllMedia(msg.media, client);
-      if (extractedMedia.length > 0) {
-        console.log(
-          `   ✅ Успешно извлечено медиа: ${extractedMedia.length} шт.`
-        );
+      // Извлекаем медиа из ВСЕХ сообщений группы
+      const allExtractedMedia: TelegramPostMedia[] = [];
+      for (const msg of msgs) {
+        if (msg.media) {
+          const mediaItem = await this.extractAllMedia(msg.media, client);
+          allExtractedMedia.push(...mediaItem);
+        }
       }
 
       posts.push({
-        id: msg.id,
-        date: msg.date,
-        message: msg.text || '',
-        peerId: msg.chat.id.toString(),
-        channelUsername: channelUsername.replace('@', ''), // Сразу чистим юзернейм
-        media: extractedMedia,
+        id: mainMsg.id, // ID берем от первого сообщения группы
+        date: mainMsg.date,
+        message: fullText,
+        peerId: mainMsg.chat.id.toString(),
+        channelUsername: channelUsername.replace('@', ''),
+        media: allExtractedMedia,
       });
     }
 
     console.log(
-      `✅ [getChannelPosts] Итог: сформировано ${posts.length} постов`
+      `✅ [getChannelPosts] Итог: сформировано ${posts.length} постов из ${messages.length} объектов API`
     );
     return posts;
   }

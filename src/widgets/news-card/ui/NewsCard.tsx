@@ -13,57 +13,67 @@ interface NewsCardProps {
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const firstImage = news.media.find((m) => m.type === 'photo');
-  const hasMedia = news.media.length > 0;
+  // Берем первое медиа, вне зависимости от типа (photo или video)
+  const mainMedia =
+    news.media && news.media.length > 0 ? news.media[0] : null;
 
   return (
     <>
       <article className="flex flex-col max-w-full animate-in fade-in slide-in-from-bottom-3 duration-300">
-        {/* Контейнер сообщения */}
         <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm border border-gray-100 dark:border-[#2a2a2c] overflow-hidden">
-          {/* Источник (шапка поста) */}
+          {/* Шапка поста */}
           <div className="px-4 py-2 flex items-center justify-between border-b border-gray-50 dark:border-[#2a2a2c]">
-            <span className="text-[#229ED9] font-bold text-sm hover:underline cursor-pointer">
-              {news.source || 'Канал'}
+            <span className="text-[#229ED9] font-bold text-sm">
+              {news.source}
             </span>
-            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-              >
-                <path
-                  d="M12 5v.01M12 12v.01M12 19v.01"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
           </div>
 
-          {/* Изображение */}
-          {firstImage && (
+          {/* Медиа-блок */}
+          {mainMedia && (
             <div
-              className="relative aspect-video w-full overflow-hidden cursor-zoom-in"
+              className="relative aspect-video w-full overflow-hidden cursor-zoom-in bg-black flex items-center justify-center"
               onClick={() => setIsModalOpen(true)}
             >
-              <Image
-                src={firstImage.url}
-                alt={news.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 700px"
-              />
+              {mainMedia.type === 'video' ? (
+                <div className="relative w-full h-full">
+                  <video
+                    src={mainMedia.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                  {/* Иконка Play поверх видео */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <div className="bg-white/20 backdrop-blur-md p-3 rounded-full">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-8 h-8 fill-white"
+                      >
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Image
+                  src={mainMedia.url}
+                  alt={news.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 700px"
+                />
+              )}
+
+              {/* Счетчик медиа (если больше одного) */}
               {news.media.length > 1 && (
-                <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold">
+                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold">
                   1 / {news.media.length}
                 </div>
               )}
             </div>
           )}
 
-          {/* Контент */}
+          {/* Текст */}
           <div className="p-4 relative">
             <h2 className="text-[17px] font-bold mb-1.5 text-gray-900 dark:text-white leading-tight">
               {news.title}
@@ -72,12 +82,10 @@ export function NewsCard({ news }: NewsCardProps) {
               {news.content}
             </p>
 
-            {/* Подвал сообщения с временем */}
             <div className="mt-2 flex items-center justify-end gap-1">
               <time className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">
                 {formatDate(news.publishedAt)}
               </time>
-              {/* Иконка "прочитано" как в ТГ */}
               <svg
                 viewBox="0 0 24 24"
                 className="w-4 h-4 text-[#229ED9]"
@@ -94,11 +102,11 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
           </div>
 
-          {/* Кнопка действия (в стиле встроенных кнопок TG) */}
-          <div className="p-2 pt-0 grid grid-cols-1">
+          {/* Кнопка действия */}
+          <div className="p-2 pt-0">
             <button
-              className="w-full bg-blue-50 dark:bg-[#229ED9]/10 hover:bg-blue-100 dark:hover:bg-[#229ED9]/20 text-[#229ED9] text-[14px] font-bold py-2.5 rounded-xl transition-all active:scale-[0.99]"
-              onClick={() => console.log('Анализировать', news.id)}
+              className="w-full bg-blue-50 dark:bg-[#229ED9]/10 hover:bg-blue-100 dark:hover:bg-[#229ED9]/20 text-[#229ED9] text-[14px] font-bold py-2.5 rounded-xl transition-all"
+              onClick={() => console.log('Анализ', news.id)}
             >
               🤖 Анализировать новость
             </button>
@@ -106,7 +114,7 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       </article>
 
-      {isModalOpen && hasMedia && (
+      {isModalOpen && mainMedia && (
         <MediaModal
           media={news.media}
           onClose={() => setIsModalOpen(false)}
