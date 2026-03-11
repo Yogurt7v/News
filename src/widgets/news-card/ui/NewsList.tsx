@@ -1,46 +1,58 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
 import { NewsWithMedia } from '@/entities/news/types';
 
 interface NewsListProps {
   initialNews: NewsWithMedia[];
-  currentChannel?: string; // Пропс для фильтрации в API
 }
 
-export function NewsList({ initialNews, currentChannel }: NewsListProps) {
+export function NewsList({ initialNews }: NewsListProps) {
   const [news, setNews] = useState(initialNews);
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 10);
 
+  const searchParams = useSearchParams();
+  const currentChannel = searchParams.get('channel');
+
+  useEffect(() => {
+    setNews(initialNews);
+    setHasMore(initialNews.length >= 10);
+  }, [initialNews]);
+
   const loadMore = async () => {
     startTransition(async () => {
-      const res = await fetch(`/api/news?offset=${news.length}&limit=10`);
+      const params = new URLSearchParams({
+        offset: news.length.toString(),
+        limit: '10',
+      });
+      if (currentChannel) params.set('channel', currentChannel);
+
+      const res = await fetch(`/api/news?${params.toString()}`);
       const newNews = await res.json();
       setNews((prev) => [...prev, ...newNews]);
-      setHasMore(newNews.length === 10);
+      setHasMore(newNews.length >= 10);
     });
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-10">
-      {news.map((item) => (
-        <div
-          key={item.id}
-          className="transition-transform active:scale-[0.99]"
-        >
-          <NewsCard news={item} />
-        </div>
-      ))}
+    // Максимальная ширина 700px — золотой стандарт для читаемости постов
+    <div className="max-w-[700px] mx-auto w-full py-4 px-2 sm:px-4 space-y-4">
+      <div className="flex flex-col gap-4">
+        {news.map((item) => (
+          <NewsCard key={item.id} news={item} />
+        ))}
+      </div>
 
       {hasMore && (
         <button
           onClick={loadMore}
           disabled={isPending}
-          className="mt-4 block mx-auto py-2 px-8 rounded-full bg-white dark:bg-[#242424] text-[#2481cc] shadow-sm hover:shadow-md transition-all text-sm font-medium disabled:opacity-50"
+          className="w-full py-3 text-[#229ED9] font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors disabled:opacity-50"
         >
-          {isPending ? 'Загрузка...' : 'Показать еще'}
+          {isPending ? 'Загрузка...' : 'Показать еще сообщения'}
         </button>
       )}
     </div>
