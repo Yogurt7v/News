@@ -1,91 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  getUserSubscriptions,
-  unsubscribeFromChannel,
-} from '@/features/subscriptions/actions';
+import { getUserSubscriptions } from '@/features/subscriptions/actions';
 import { AddChannelForm } from '@/features/subscriptions/ui/AddChannelForm';
+import {
+  createGroupWithChannels,
+  deleteGroup,
+  getUserGroups,
+} from '@/features/groups/actions';
+
+// Импортируем вынесенные модалки
+import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
+import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
 
 export function Sidebar() {
   const [channels, setChannels] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentChannel = searchParams.get('channel');
 
-  useEffect(() => {
-    const loadChannels = async () => {
-      try {
-        const list = await getUserSubscriptions();
-        setChannels(list);
-      } catch (error) {
-        console.error('Ошибка загрузки подписок:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadChannels();
+  const currentChannel = searchParams.get('channel');
+  const currentGroupId = searchParams.get('groupId');
+
+  const refreshData = useCallback(async () => {
+    try {
+      const [channelsList, groupsList] = await Promise.all([
+        getUserSubscriptions(),
+        getUserGroups(),
+      ]);
+      setChannels(channelsList);
+      setGroups(groupsList);
+    } catch (e) {
+      console.error('Failed to refresh sidebar data:', e);
+    }
   }, []);
 
-  const refreshChannels = async () => {
-    setLoading(true);
-    try {
-      const list = await getUserSubscriptions();
-      setChannels(list);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
-  const handleUnsubscribe = async (
-    e: React.MouseEvent,
-    channel: string
-  ) => {
-    e.stopPropagation(); // Чтобы не срабатывал клик по каналу
-    try {
-      await unsubscribeFromChannel(channel);
-      await refreshChannels();
-      if (currentChannel === channel) router.push(pathname);
-    } catch (error) {
-      console.error('Ошибка отписки:', error);
-    }
-  };
-
-  const handleChannelClick = (channel: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('channel', channel);
-    router.push(`${pathname}?${params.toString()}`);
+  const handleGroupClick = (id: string) => {
+    const p = new URLSearchParams();
+    p.set('groupId', id);
+    router.push(`${pathname}?${p.toString()}`);
     setMobileOpen(false);
   };
 
   const sidebarContent = (
     <div className="h-full flex flex-col bg-white dark:bg-[#1c1c1e] text-[#1c1c1e] dark:text-white transition-colors duration-200">
-      {/* Шапка сайдбара в стиле TG */}
+      {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-[#2a2a2c]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#229ED9] flex items-center justify-center text-white shadow-sm">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M19 20L5 20C3.89543 20 3 19.1046 3 18L3 6C3 4.89543 3.89543 4 5 4L19 4C20.1046 4 21 4.89543 21 6L21 18C21 19.1046 20.1046 20 19 20Z" />
-              <path d="M7 8H17M7 12H17M7 16H13" strokeLinecap="round" />
-            </svg>
+        <div
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={() => router.push('/')}
+        >
+          <div className="w-10 h-10 rounded-full bg-[#229ED9] flex items-center justify-center text-white shadow-sm font-bold">
+            N
           </div>
           <h2 className="font-bold text-lg tracking-tight">Новости</h2>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className={`p-2 rounded-full transition-colors ${showAddForm ? 'bg-blue-50 text-[#229ED9] dark:bg-blue-500/10' : 'hover:bg-gray-100 dark:hover:bg-[#2a2a2c]'}`}
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2c] transition-colors"
         >
           <svg
             viewBox="0 0 24 24"
@@ -99,110 +85,132 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Форма добавления */}
       {showAddForm && (
-        <div className="p-4 bg-gray-50 dark:bg-[#242426] border-b border-gray-100 dark:border-[#2a2a2c] animate-in slide-in-from-top duration-200">
+        <div className="p-4 bg-gray-50 dark:bg-[#242426] border-b dark:border-[#2a2a2c]">
           <AddChannelForm
             onSuccess={() => {
               setShowAddForm(false);
-              refreshChannels();
+              refreshData();
             }}
           />
         </div>
       )}
 
-      {/* Список каналов */}
-      <nav className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="px-2 py-3">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        {/* Все посты (Reset) */}
+        <div
+          onClick={() => {
+            router.push(pathname);
+            setMobileOpen(false);
+          }}
+          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${!currentChannel && !currentGroupId ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+        >
+          <span className="text-xl">📱</span>
+          <span className="font-semibold text-[15px]">Все посты</span>
+        </div>
+
+        <div className="my-3 border-t dark:border-white/5 mx-2" />
+
+        {/* Папки */}
+        <div className="px-2 mb-2 flex items-center justify-between">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+            Папки
+          </p>
           <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="text-[11px] text-[#229ED9] font-bold hover:underline"
+          >
+            СОЗДАТЬ
+          </button>
+        </div>
+
+        {groups.map((group) => (
+          <div
+            key={group.id}
+            onClick={() => handleGroupClick(group.id)}
+            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentGroupId === group.id ? 'bg-blue-50 dark:bg-[#229ED9]/10 text-[#229ED9]' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">📁</span>
+              <span className="font-medium text-[15px] truncate max-w-[140px]">
+                {group.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full text-gray-500">
+                {group.channels?.length || 0}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGroupToDelete({ id: group.id, name: group.name });
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <div className="my-3 border-t dark:border-white/5 mx-2" />
+
+        {/* Плоский список каналов */}
+        <p className="px-2 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+          Каналы
+        </p>
+        {channels.map((channel) => (
+          <div
+            key={channel}
             onClick={() => {
-              router.push(pathname);
+              const p = new URLSearchParams();
+              p.set('channel', channel);
+              router.push(`${pathname}?${p.toString()}`);
               setMobileOpen(false);
             }}
-            className={`w-full flex items-center px-3 py-3 mb-1 rounded-xl transition-all duration-200 ${
-              !currentChannel
-                ? 'bg-[#229ED9] text-white shadow-blue-500/20 shadow-lg'
-                : 'hover:bg-gray-100 dark:hover:bg-[#2a2a2c]'
-            }`}
+            className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
           >
-            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#3a3a3c] mr-3 flex items-center justify-center overflow-hidden">
-              <span className="text-sm font-bold">ALL</span>
-            </div>
-            <span className="font-medium">Все новости</span>
-          </button>
-
-          {loading ? (
-            <div className="flex flex-col gap-2 p-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-14 w-full bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse"
-                />
-              ))}
-            </div>
-          ) : (
-            <ul className="space-y-1">
-              {channels.map((ch) => (
-                <li key={ch} className="relative group">
-                  <button
-                    onClick={() => handleChannelClick(ch)}
-                    className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 ${
-                      currentChannel === ch
-                        ? 'bg-[#229ED9] text-white shadow-blue-500/20 shadow-lg'
-                        : 'hover:bg-gray-100 dark:hover:bg-[#2a2a2c]'
-                    }`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center font-bold text-sm ${
-                        currentChannel === ch
-                          ? 'bg-white/20'
-                          : 'bg-[#229ED9]/10 text-[#229ED9]'
-                      }`}
-                    >
-                      {ch.substring(0, 1).toUpperCase()}
-                    </div>
-                    <div className="flex-1 text-left truncate font-medium">
-                      @{ch}
-                    </div>
-                  </button>
-                  <button
-                    onClick={(e) => handleUnsubscribe(e, ch)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all ${
-                      currentChannel === ch
-                        ? 'text-white/70 hover:bg-white/20'
-                        : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <path
-                        d="M18 6L6 18M6 6l12 12"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            <span className="text-[14px] font-medium truncate">
+              @{channel}
+            </span>
+          </div>
+        ))}
       </nav>
+
+      {/* Модалки */}
+      {isCreateModalOpen && (
+        <CreateGroupModal
+          allChannels={channels}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={async (name, selected) => {
+            await createGroupWithChannels(name, selected);
+            setIsCreateModalOpen(false);
+            refreshData();
+          }}
+        />
+      )}
+
+      {groupToDelete && (
+        <DeleteGroupModal
+          groupName={groupToDelete.name}
+          onClose={() => setGroupToDelete(null)}
+          onConfirm={async () => {
+            await deleteGroup(groupToDelete.id);
+            if (currentGroupId === groupToDelete.id) router.push(pathname);
+            setGroupToDelete(null);
+            refreshData();
+          }}
+        />
+      )}
     </div>
   );
 
   return (
     <>
-      {/* Desktop */}
-      <aside className="hidden md:block w-72 shrink-0 border-r border-gray-100 dark:border-[#2a2a2c] h-screen sticky top-0">
+      <aside className="hidden md:block w-72 shrink-0 border-r border-gray-100 dark:border-[#2a2a2c] h-screen sticky top-0 bg-white dark:bg-[#1c1c1e]">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Burger */}
       <button
         onClick={() => setMobileOpen(true)}
         className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#229ED9] text-white rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-transform"
@@ -218,14 +226,13 @@ export function Sidebar() {
         </svg>
       </button>
 
-      {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[100] md:hidden">
+        <div className="fixed inset-0 z-100 md:hidden">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute top-0 left-0 h-full w-[80%] max-w-[300px] shadow-2xl animate-in slide-in-from-left duration-300">
+          <aside className="absolute top-0 left-0 h-full w-[80%] max-w-75 shadow-2xl animate-in slide-in-from-left duration-300">
             {sidebarContent}
           </aside>
         </div>

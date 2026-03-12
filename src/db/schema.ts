@@ -21,7 +21,7 @@ export const users = pgTable('users', {
   password: text('password'),
   name: text('name'),
   image: text('image'),
-  role: roleEnum('role').default('user'),
+  role: roleEnum('role').default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -137,6 +137,31 @@ export const subscriptions = pgTable(
   })
 );
 
+export const groups = pgTable('groups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const groupChannels = pgTable(
+  'group_channels',
+  {
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    channelUsername: text('channel_username').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Составной первичный ключ: один канал может быть добавлен в группу только один раз
+    pk: primaryKey({ columns: [table.groupId, table.channelUsername] }),
+  })
+);
+
 // Отношения
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
@@ -169,6 +194,20 @@ export const mediaRelations = relations(media, ({ one }) => ({
     references: [news.id],
   }),
 }));
+
+export const groupsRelations = relations(groups, ({ many }) => ({
+  channels: many(groupChannels),
+}));
+
+export const groupChannelsRelations = relations(
+  groupChannels,
+  ({ one }) => ({
+    group: one(groups, {
+      fields: [groupChannels.groupId],
+      references: [groups.id],
+    }),
+  })
+);
 
 export type DbUser = InferSelectModel<typeof users>;
 export type DbSession = InferSelectModel<typeof sessions>;

@@ -13,7 +13,7 @@ interface NewsCardProps {
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Берем первое медиа, вне зависимости от типа (photo или video)
+  // Берем первое медиа
   const mainMedia =
     news.media && news.media.length > 0 ? news.media[0] : null;
 
@@ -38,11 +38,10 @@ export function NewsCard({ news }: NewsCardProps) {
                 <div className="relative w-full h-full">
                   <video
                     src={mainMedia.url}
-                    className="w-full h-full object-сontain"
+                    className="w-full h-full object-contain"
                     muted
                     playsInline
                   />
-                  {/* Иконка Play поверх видео */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                     <div className="bg-white/20 backdrop-blur-md p-3 rounded-full">
                       <svg
@@ -64,7 +63,6 @@ export function NewsCard({ news }: NewsCardProps) {
                 />
               )}
 
-              {/* Счетчик медиа (если больше одного) */}
               {news.media.length > 1 && (
                 <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold">
                   1 / {news.media.length}
@@ -114,6 +112,7 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       </article>
 
+      {/* Модалка рендерится через Portal, поэтому она всегда будет "выше" карточки */}
       {isModalOpen && mainMedia && (
         <MediaModal
           media={news.media}

@@ -38,8 +38,7 @@ export function NewsList({ initialNews }: NewsListProps) {
   };
 
   return (
-    // Максимальная ширина 700px — золотой стандарт для читаемости постов
-    <div className="max-w-[700px] mx-auto w-full py-4 px-2 sm:px-4 space-y-4">
+    <div className="max-w-175 mx-auto w-full py-4 px-2 sm:px-4 space-y-4">
       <div className="flex flex-col gap-4">
         {news.map((item) => (
           <NewsCard key={item.id} news={item} />
