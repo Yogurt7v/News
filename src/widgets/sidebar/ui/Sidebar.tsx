@@ -9,8 +9,6 @@ import {
   deleteGroup,
   getUserGroups,
 } from '@/features/groups/actions';
-
-// Импортируем вынесенные модалки
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
 
@@ -49,10 +47,11 @@ export function Sidebar() {
     refreshData();
   }, [refreshData]);
 
-  const handleGroupClick = (id: string) => {
-    const p = new URLSearchParams();
-    p.set('groupId', id);
-    router.push(`${pathname}?${p.toString()}`);
+  const handleGroupClick = (groupId: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('group', groupId);
+    params.delete('channel');
+    router.push(`${pathname}?${params.toString()}`);
     setMobileOpen(false);
   };
 
@@ -137,9 +136,9 @@ export function Sidebar() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full text-gray-500">
+              {/* <span className="text-[10px] font-bold bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full text-gray-500">
                 {group.channels?.length || 0}
-              </span>
+              </span> */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
