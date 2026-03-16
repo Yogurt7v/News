@@ -5,6 +5,7 @@ import { eq, lt } from 'drizzle-orm';
 import { TelegramClient } from '@mtcute/node'; // Добавьте импорт типа
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import process from 'process';
 
 export interface TelegramPost {
@@ -20,6 +21,7 @@ export interface TelegramPostMedia {
   type: 'photo' | 'video' | 'document' | 'web_page';
   url?: string;
   fileId: string;
+  tempPath: string;
   mimeType?: string;
   fileName?: string;
   width?: number;
@@ -86,7 +88,12 @@ export class TelegramParserService {
       const allExtractedMedia: TelegramPostMedia[] = [];
       for (const msg of msgs) {
         if (msg.media) {
-          const mediaItem = await this.extractAllMedia(msg.media, client);
+          const mediaItem = await this.extractAllMedia(
+            msg.media,
+            client,
+            channelUsername,
+            mainMsg.id
+          );
           allExtractedMedia.push(...mediaItem);
         }
       }
@@ -141,7 +148,9 @@ export class TelegramParserService {
 
   private async extractAllMedia(
     telegramMedia: any,
-    client: TelegramClient
+    client: TelegramClient,
+    channelUsername: string,
+    postId: number
   ): Promise<TelegramPostMedia[]> {
     const result: TelegramPostMedia[] = [];
     if (!telegramMedia) return result;
@@ -159,47 +168,30 @@ export class TelegramParserService {
 
     if (type && m.fileId) {
       try {
-        // 1. Определяем расширение и пути
         const extension = type === 'video' ? 'mp4' : 'jpg';
         const fileName = `${m.fileId}.${extension}`;
+        const tmpDir = os.tmpdir();
+        const tmpPath = path.join(tmpDir, fileName);
 
-        // Убедись, что путь корректный для твоего проекта
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        const filePath = path.join(uploadDir, fileName);
-
-        // 2. Создаем папку, если её нет (важно!)
-        await fs.mkdir(uploadDir, { recursive: true });
-
-        // 3. Проверяем наличие файла
-        const fileExists = await fs
-          .access(filePath)
-          .then(() => true)
-          .catch(() => false);
-
-        if (fileExists) {
-          console.log(`   📎 Файл уже на диске: ${fileName}`);
-        } else {
-          console.log(`   📥 Скачиваю ${type} в файл...`);
-
-          await client.downloadToFile(filePath, m);
-
-          console.log(`   ✅ Файл сохранен: ${fileName}`);
-        }
+        console.log(
+          `   📥 Скачиваю ${type} во временный файл: ${tmpPath}`
+        );
+        await client.downloadToFile(tmpPath, m);
+        console.log(`   ✅ Временный файл сохранён`);
 
         result.push({
           type,
           fileId: m.fileId,
-          url: `/uploads/${fileName}`, // Путь относительно корня public для фронтенда
+          tempPath: tmpPath,
           mimeType: m.mimeType,
           fileName: fileName,
           width: m.width,
           height: m.height,
         });
       } catch (e) {
-        console.error(`   ❌ Ошибка при работе с файлом ${m.fileId}:`, e);
+        console.error(`   ❌ Ошибка при скачивании файла ${m.fileId}:`, e);
       }
     }
-
     return result;
   }
   /**
