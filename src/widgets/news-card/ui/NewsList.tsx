@@ -37,7 +37,7 @@ export function NewsList({ initialNews }: NewsListProps) {
       }
       const res = await fetch(`/api/news?${params.toString()}`);
       const newNews = await res.json();
-      setNews(prev => [...prev, ...newNews]);
+      setNews((prev) => [...prev, ...newNews]);
       setHasMore(newNews.length === 20);
     });
   };

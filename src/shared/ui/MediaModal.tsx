@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import { NewsWithMedia } from '@/entities/news/types';
 
 interface MediaModalProps {
-  media: NewsWithMedia['media'];
+  // Используем простую структуру массива, которую мы передаем из NewsCard
+  media: { type: string; url: string }[];
   onClose: () => void;
 }
 
@@ -35,13 +35,19 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
       if (e.key === 'ArrowRight') next();
       if (e.key === 'ArrowLeft') prev();
     };
+
+    // Блокируем скролл основной страницы при открытой модалке
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, next, prev]);
+
+  // Если вдруг массив пустой, не рендерим ничего
+  if (!media || media.length === 0) return null;
 
   const current = media[currentIndex];
 
@@ -74,7 +80,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           </svg>
         </button>
 
-        {/* Навигация (скрываем фон кнопок на мобилках для чистоты) */}
+        {/* Навигация */}
         {media.length > 1 && (
           <>
             <button
@@ -124,6 +130,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
                 src={current.url}
                 alt="Full view"
                 fill
+                unoptimized // Важно для работы с локальным IP PocketBase
                 className="object-contain"
                 priority
                 sizes="100vw"
@@ -141,7 +148,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           )}
         </div>
 
-        {/* Индикатор */}
+        {/* Индикатор количества */}
         <div className="absolute bottom-6 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full text-white/90 text-sm backdrop-blur-md font-medium">
           {currentIndex + 1} / {media.length}
         </div>

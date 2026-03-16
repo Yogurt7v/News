@@ -2,20 +2,37 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { NewsWithMedia } from '@/entities/news/types';
-import { formatDate } from '@/shared/lib/date';
 import { MediaModal } from '@/shared/ui/MediaModal';
+import pb from '@/lib/pocketbase';
+import { formatDate } from '@/shared/lib/date';
 
 interface NewsCardProps {
-  news: NewsWithMedia;
+  news: any;
 }
 
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Берем первое медиа
-  const mainMedia =
-    news.media && news.media.length > 0 ? news.media[0] : null;
+  // 1. Извлекаем медиа из PocketBase (ключ 'media(newsId)')
+  const expandedMedia = news.expand?.['media(newsId)'];
+
+  let mediaItems: { type: string; url: string }[] = [];
+
+  if (Array.isArray(expandedMedia)) {
+    mediaItems = expandedMedia.map((m: any) => ({
+      type: m.type,
+      // В PocketBase SDK метод называется getURL (все заглавные)
+      url: pb.files.getURL(m, m.file),
+    }));
+  } else if (news.media && Array.isArray(news.media)) {
+    // Поддержка старого формата
+    mediaItems = news.media;
+  }
+
+  const mainMedia = mediaItems.length > 0 ? mediaItems[0] : null;
+  const publishedDate = news.publishedAt
+    ? new Date(news.publishedAt)
+    : null;
 
   return (
     <>
@@ -31,7 +48,7 @@ export function NewsCard({ news }: NewsCardProps) {
           {/* Медиа-блок */}
           {mainMedia && (
             <div
-              className="relative aspect-video w-full overflow-hidden cursor-zoom-in bg-black flex items-center justify-center"
+              className="relative aspect-video w-full overflow-hidden cursor-zoom-in bg-gray-200 dark:bg-[#121214] flex items-center justify-center"
               onClick={() => setIsModalOpen(true)}
             >
               {mainMedia.type === 'video' ? (
@@ -56,16 +73,19 @@ export function NewsCard({ news }: NewsCardProps) {
               ) : (
                 <Image
                   src={mainMedia.url}
-                  alt={news.title}
+                  alt={news.title || 'Изображение новости'}
                   fill
+                  // КРИТИЧНО: unoptimized позволяет загружать картинки с 127.0.0.1
+                  unoptimized
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, 700px"
+                  priority={false}
                 />
               )}
 
-              {news.media.length > 1 && (
+              {mediaItems.length > 1 && (
                 <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold">
-                  1 / {news.media.length}
+                  1 / {mediaItems.length}
                 </div>
               )}
             </div>
@@ -82,7 +102,7 @@ export function NewsCard({ news }: NewsCardProps) {
 
             <div className="mt-2 flex items-center justify-end gap-1">
               <time className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">
-                {formatDate(news.publishedAt)}
+                {publishedDate ? formatDate(publishedDate) : ''}
               </time>
               <svg
                 viewBox="0 0 24 24"
@@ -104,7 +124,10 @@ export function NewsCard({ news }: NewsCardProps) {
           <div className="p-2 pt-0">
             <button
               className="w-full bg-blue-50 dark:bg-[#229ED9]/10 hover:bg-blue-100 dark:hover:bg-[#229ED9]/20 text-[#229ED9] text-[14px] font-bold py-2.5 rounded-xl transition-all"
-              onClick={() => console.log('Анализ', news.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Анализ', news.id);
+              }}
             >
               🤖 Анализировать новость
             </button>
@@ -112,10 +135,10 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       </article>
 
-      {/* Модалка рендерится через Portal, поэтому она всегда будет "выше" карточки */}
+      {/* Модалка */}
       {isModalOpen && mainMedia && (
         <MediaModal
-          media={news.media}
+          media={mediaItems}
           onClose={() => setIsModalOpen(false)}
         />
       )}
