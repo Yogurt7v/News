@@ -6,7 +6,6 @@ import { AddChannelForm } from '@/features/subscriptions/ui/AddChannelForm';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
 import {
-  subscribeToChannel,
   unsubscribeFromChannel,
   getUserSubscriptions,
   getUserGroups,
@@ -17,24 +16,91 @@ import {
   renameGroup,
 } from '@/features/subscriptions/actions.pb';
 
+// --- Универсальный UI компонент модалки ---
+function ConfirmModal({
+  isOpen,
+  onClose,
+  title,
+  message,
+  onConfirm,
+  variant = 'primary',
+}: any) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-sm bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-2xl border border-gray-100 dark:border-[#2a2a2c] p-6 animate-in zoom-in-95 duration-200">
+        <h3 className="text-lg font-bold mb-2 text-[#1c1c1e] dark:text-white">
+          {title}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          {message}
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-[#2a2a2c] text-sm font-semibold hover:bg-gray-200 dark:hover:bg-[#3a3a3c] transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white ${variant === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-[#229ED9] hover:bg-[#1b8ec2]'}`}
+          >
+            Подтвердить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- ОСНОВНОЙ КОМПОНЕНТ SIDEBAR ---
 export function Sidebar() {
   const [channels, setChannels] = useState<string[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); // добавлено состояние загрузки
+  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Состояния для редактирования и удаления
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(
+    null
+  );
+  const [editName, setEditName] = useState('');
   const [groupToDelete, setGroupToDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Состояние кастомной модалки подтверждения
+  const [confirmData, setConfirmData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant: 'danger' | 'primary';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    variant: 'primary',
+  });
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const currentChannel = searchParams.get('channel');
-  const currentGroupId = searchParams.get('groupId');
+  const currentGroupId = searchParams.get('group');
 
   const refreshData = useCallback(async () => {
     try {
@@ -50,42 +116,69 @@ export function Sidebar() {
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [channelsList, groupsList] = await Promise.all([
-          getUserSubscriptions(),
-          getUserGroups(),
-        ]);
-        setChannels(channelsList);
-        setGroups(groupsList);
-      } catch (error) {
-        console.error('Ошибка загрузки:', error);
-      } finally {
-        setLoading(false); // теперь loading определён
-      }
-    };
-    loadData();
-  }, []);
+    refreshData().finally(() => setLoading(false));
+  }, [refreshData]);
 
-  // Функция для создания группы с выбранными каналами
+  // --- ЛОГИКА ---
+
+  const openConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    variant: 'danger' | 'primary' = 'primary'
+  ) => {
+    setConfirmData({ isOpen: true, title, message, onConfirm, variant });
+  };
+
+  const handleRenameGroup = async (id: string) => {
+    if (!editName.trim()) return setEditingGroupId(null);
+    try {
+      await renameGroup(id, editName);
+      setEditingGroupId(null);
+      refreshData();
+    } catch (e) {
+      openConfirm('Ошибка', 'Не удалось переименовать папку', () => {});
+    }
+  };
+
+  const handleUnsubscribe = (e: React.MouseEvent, channel: string) => {
+    e.stopPropagation();
+    openConfirm(
+      'Отписаться?',
+      `Вы уверены, что хотите отписаться от @${channel}?`,
+      async () => {
+        await unsubscribeFromChannel(channel);
+        if (currentChannel === channel) router.push(pathname);
+        refreshData();
+      },
+      'danger'
+    );
+  };
+
+  const handleRemoveFromGroup = (
+    e: React.MouseEvent,
+    groupId: string,
+    channel: string
+  ) => {
+    e.stopPropagation();
+    openConfirm(
+      'Убрать из папки?',
+      `Убрать @${channel} из этой папки? (Подписка останется)`,
+      async () => {
+        await removeChannelFromGroup(groupId, channel);
+        refreshData();
+      }
+    );
+  };
+
   const createGroupWithChannels = async (
     name: string,
     selectedChannels: string[]
   ) => {
-    // Создаём группу (без каналов)
     const newGroup = await createGroup(name);
-    // Для каждого выбранного канала добавляем его в группу
     for (const ch of selectedChannels) {
       await addChannelToGroup(newGroup.id, ch);
     }
-  };
-
-  const handleGroupClick = (groupId: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('group', groupId);
-    params.delete('channel');
-    router.push(`${pathname}?${params.toString()}`);
-    setMobileOpen(false);
   };
 
   const sidebarContent = (
@@ -129,7 +222,7 @@ export function Sidebar() {
       )}
 
       <nav className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-        {/* Все посты (Reset) */}
+        {/* Все посты */}
         <div
           onClick={() => {
             router.push(pathname);
@@ -143,7 +236,7 @@ export function Sidebar() {
 
         <div className="my-3 border-t dark:border-white/5 mx-2" />
 
-        {/* Папки */}
+        {/* ПАПКИ */}
         <div className="px-2 mb-2 flex items-center justify-between">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
             Папки
@@ -157,37 +250,82 @@ export function Sidebar() {
         </div>
 
         {groups.map((group) => (
-          <div
-            key={group.id}
-            onClick={() => handleGroupClick(group.id)}
-            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentGroupId === group.id ? 'bg-blue-50 dark:bg-[#229ED9]/10 text-[#229ED9]' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-lg">📁</span>
-              <span className="font-medium text-[15px] truncate max-w-[140px]">
-                {group.name}
-              </span>
+          <div key={group.id} className="group/folder">
+            <div
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+                params.set('group', group.id);
+                params.delete('channel');
+                router.push(`${pathname}?${params.toString()}`);
+                setMobileOpen(false);
+              }}
+              className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentGroupId === group.id ? 'bg-blue-50 dark:bg-[#229ED9]/10 text-[#229ED9]' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="text-lg">📁</span>
+                {editingGroupId === group.id ? (
+                  <input
+                    autoFocus
+                    className="bg-white dark:bg-[#2a2a2c] border border-blue-500 rounded px-1 text-[15px] w-full outline-none"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => handleRenameGroup(group.id)}
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && handleRenameGroup(group.id)
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className="font-medium text-[15px] truncate">
+                    {group.name}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingGroupId(group.id);
+                    setEditName(group.name);
+                  }}
+                  className="p-1 hover:text-blue-500 text-gray-400"
+                >
+                  ✎
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGroupToDelete({ id: group.id, name: group.name });
+                  }}
+                  className="p-1 hover:text-red-500 text-gray-400"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* <span className="text-[10px] font-bold bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full text-gray-500">
-                {group.channels?.length || 0}
-              </span> */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setGroupToDelete({ id: group.id, name: group.name });
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
-              >
-                ✕
-              </button>
-            </div>
+
+            {/* Каналы внутри папки (аккордеон) */}
+            {currentGroupId === group.id &&
+              group.channels?.map((ch: string) => (
+                <div
+                  key={ch}
+                  className="ml-9 mr-2 p-2 flex items-center justify-between text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg group/ch"
+                >
+                  <span className="truncate">@{ch}</span>
+                  <button
+                    onClick={(e) => handleRemoveFromGroup(e, group.id, ch)}
+                    className="opacity-0 group-ch/hover:opacity-100 text-[10px] hover:text-red-500 transition-opacity"
+                  >
+                    убрать
+                  </button>
+                </div>
+              ))}
           </div>
         ))}
 
         <div className="my-3 border-t dark:border-white/5 mx-2" />
 
-        {/* Плоский список каналов */}
+        {/* КАНАЛЫ (Плоский список) */}
         <p className="px-2 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
           Каналы
         </p>
@@ -200,16 +338,80 @@ export function Sidebar() {
               router.push(`${pathname}?${p.toString()}`);
               setMobileOpen(false);
             }}
-            className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
           >
             <span className="text-[14px] font-medium truncate">
               @{channel}
             </span>
+            <button
+              onClick={(e) => handleUnsubscribe(e, channel)}
+              className={`opacity-0 group-hover:opacity-100 p-1 transition-opacity ${currentChannel === channel ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'}`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         ))}
       </nav>
+    </div>
+  );
 
-      {/* Модалки */}
+  return (
+    <>
+      <aside className="hidden md:block w-72 shrink-0 border-r border-gray-100 dark:border-[#2a2a2c] h-screen sticky top-0 bg-white dark:bg-[#1c1c1e]">
+        {sidebarContent}
+      </aside>
+
+      {/* Моб. кнопка */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#229ED9] text-white rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-transform"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="w-7 h-7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {/* Моб. меню */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="absolute top-0 left-0 h-full w-[85%] max-w-[300px] shadow-2xl animate-in slide-in-from-left duration-300 bg-white dark:bg-[#1c1c1e]">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* ВСЕ МОДАЛКИ */}
+      <ConfirmModal
+        isOpen={confirmData.isOpen}
+        onClose={() => setConfirmData({ ...confirmData, isOpen: false })}
+        title={confirmData.title}
+        message={confirmData.message}
+        onConfirm={confirmData.onConfirm}
+        variant={confirmData.variant}
+      />
+
       {isCreateModalOpen && (
         <CreateGroupModal
           allChannels={channels}
@@ -233,41 +435,6 @@ export function Sidebar() {
             refreshData();
           }}
         />
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      <aside className="hidden md:block w-72 shrink-0 border-r border-gray-100 dark:border-[#2a2a2c] h-screen sticky top-0 bg-white dark:bg-[#1c1c1e]">
-        {sidebarContent}
-      </aside>
-
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#229ED9] text-white rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-transform"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="w-7 h-7"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-        </svg>
-      </button>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-100 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="absolute top-0 left-0 h-full w-[80%] max-w-75 shadow-2xl animate-in slide-in-from-left duration-300">
-            {sidebarContent}
-          </aside>
-        </div>
       )}
     </>
   );
