@@ -21,7 +21,6 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@auth/core": "^0.34.3",
     "@mtcute/node": "^0.28.1",
     "@mtcute/wasm": "^0.27.8",
     "@paralleldrive/cuid2": "^3.3.0",
@@ -31,7 +30,6 @@
     "form-data": "^4.0.5",
     "input": "^1.0.1",
     "next": "16.1.6",
-    "next-auth": "^4.24.13",
     "pg": "^8.19.0",
     "pocketbase": "^0.26.8",
     "qrcode-terminal": "^0.12.0",

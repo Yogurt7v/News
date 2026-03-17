@@ -1,26 +1,27 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
+  const pb = await getServerPocketBase();
 
-  if (!session) {
+  if (!pb.authStore.isValid || !pb.authStore.record) {
     redirect('/auth/signin');
   }
+
+  const user = pb.authStore.record as any;
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Профиль</h1>
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
         <p>
-          <strong>Имя:</strong> {session.user?.name || 'Не указано'}
+          <strong>Имя:</strong> {user?.name || 'Не указано'}
         </p>
         <p>
-          <strong>Email:</strong> {session.user?.email}
+          <strong>Email:</strong> {user?.email}
         </p>
         <p>
-          <strong>Роль:</strong> {session.user?.role || 'user'}
+          <strong>Роль:</strong> {user?.role || 'user'}
         </p>
       </div>
     </div>

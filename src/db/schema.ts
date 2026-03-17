@@ -8,7 +8,6 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations, InferSelectModel } from 'drizzle-orm';
-import { AdapterAccount } from 'next-auth/adapters';
 
 // Enum для роли пользователя (можно использовать pgEnum)
 export const roleEnum = pgEnum('role', ['user', 'admin']);
@@ -33,7 +32,7 @@ export const accounts = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').$type<AdapterAccount['type']>().notNull(),
+    type: text('type').notNull(),
     provider: text('provider').notNull(),
     providerAccountId: text('provider_account_id').notNull(),
     refresh_token: text('refresh_token'),

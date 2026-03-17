@@ -1,50 +1,65 @@
 import { NextResponse } from 'next/server';
-import { AuthService } from '@/features/auth/services/auth.service';
+import PocketBase from 'pocketbase';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, email, password } = body;
+    const { email, password, passwordConfirm, name } =
+      (await request.json()) as {
+        email?: string;
+        password?: string;
+        passwordConfirm?: string;
+        name?: string;
+      };
 
-    // 1. Более детальная валидация
-    if (!email || !password) {
+    if (!email || !password || !passwordConfirm) {
       return NextResponse.json(
-        { message: 'Email и пароль обязательны' }, // Поменял на message для совместимости с фронтом
+        { error: 'Email, password and passwordConfirm are required' },
         { status: 400 }
       );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { message: 'Пароль должен быть не менее 6 символов' },
-        { status: 400 }
-      );
-    }
+    const pb = new PocketBase(
+      process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
+    );
 
-    // 2. Проверка существования пользователя
-    const existingUser = await AuthService.findByEmail(email);
-    if (existingUser) {
-      return NextResponse.json(
-        { message: 'Пользователь с таким Email уже зарегистрирован' },
-        { status: 400 }
-      );
-    }
+    await pb.collection('users').create({
+      email,
+      password,
+      passwordConfirm,
+      name,
+    });
 
-    // 3. Регистрация (внутри AuthService пароль должен хешироваться!)
-    const user = await AuthService.register({ email, password, name });
+    const authData = await pb.collection('users').authWithPassword(
+      email,
+      password
+    );
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       {
-        user: { id: user.id, email: user.email, name: user.name },
-        message: 'Регистрация прошла успешно',
+        user: authData.record,
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Registration Error:', error);
+
+    res.headers.set(
+      'Set-Cookie',
+      pb.authStore.exportToCookie({
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        path: '/',
+      })
+    );
+
+    return res;
+  } catch (err: any) {
     return NextResponse.json(
-      { message: 'Произошла ошибка при создании аккаунта' },
-      { status: 500 }
+      {
+        error: err?.message || 'Registration failed',
+        data: err?.data,
+      },
+      { status: 400 }
     );
   }
 }
+

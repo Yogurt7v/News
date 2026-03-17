@@ -3,10 +3,9 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
-import { NewsWithMedia } from '@/entities/news/types';
 
 interface NewsListProps {
-  initialNews: NewsWithMedia[];
+  initialNews: any[];
 }
 
 export function NewsList({ initialNews }: NewsListProps) {

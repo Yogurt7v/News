@@ -2,19 +2,25 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { getUserSubscriptions } from '@/features/subscriptions/actions';
 import { AddChannelForm } from '@/features/subscriptions/ui/AddChannelForm';
-import {
-  createGroupWithChannels,
-  deleteGroup,
-  getUserGroups,
-} from '@/features/groups/actions';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
+import {
+  subscribeToChannel,
+  unsubscribeFromChannel,
+  getUserSubscriptions,
+  getUserGroups,
+  createGroup,
+  deleteGroup,
+  addChannelToGroup,
+  removeChannelFromGroup,
+  renameGroup,
+} from '@/features/subscriptions/actions.pb';
 
 export function Sidebar() {
   const [channels, setChannels] = useState<string[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true); // добавлено состояние загрузки
   const [showAddForm, setShowAddForm] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<{
@@ -44,8 +50,35 @@ export function Sidebar() {
   }, []);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    const loadData = async () => {
+      try {
+        const [channelsList, groupsList] = await Promise.all([
+          getUserSubscriptions(),
+          getUserGroups(),
+        ]);
+        setChannels(channelsList);
+        setGroups(groupsList);
+      } catch (error) {
+        console.error('Ошибка загрузки:', error);
+      } finally {
+        setLoading(false); // теперь loading определён
+      }
+    };
+    loadData();
+  }, []);
+
+  // Функция для создания группы с выбранными каналами
+  const createGroupWithChannels = async (
+    name: string,
+    selectedChannels: string[]
+  ) => {
+    // Создаём группу (без каналов)
+    const newGroup = await createGroup(name);
+    // Для каждого выбранного канала добавляем его в группу
+    for (const ch of selectedChannels) {
+      await addChannelToGroup(newGroup.id, ch);
+    }
+  };
 
   const handleGroupClick = (groupId: string) => {
     const params = new URLSearchParams(searchParams);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
-import pb from '@/lib/pocketbase';
+import pb from '@/shared/lib/pocketbase';
 import { formatDate } from '@/shared/lib/date';
 
 interface NewsCardProps {

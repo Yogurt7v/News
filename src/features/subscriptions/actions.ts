@@ -2,20 +2,23 @@
 import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { revalidatePath } from 'next/cache';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
+
+async function requireUserId(): Promise<string> {
+  const pb = await getServerPocketBase();
+  const userId = pb.authStore.record?.id;
+  if (!pb.authStore.isValid || !userId) throw new Error('Не авторизован');
+  return userId;
+}
 
 export async function getUserSubscriptions() {
   // 1. Проверяем, авторизован ли пользователь
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error('Не авторизован');
-  }
+  const userId = await requireUserId();
 
   // 2. Делаем запрос к базе: ищем все записи в таблице subscriptions, где userId равен текущему
   const userSubs = await db.query.subscriptions.findMany({
-    where: eq(subscriptions.userId, session.user.id),
+    where: eq(subscriptions.userId, userId),
 
     columns: {
       channelUsername: true,
@@ -29,10 +32,7 @@ export async function getUserSubscriptions() {
 
 export async function subscribeToChannel(channelUsername: string) {
   // 1. Проверка авторизации
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error('Не авторизован');
-  }
+  const userId = await requireUserId();
 
   // 2. Очищаем ввод
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
@@ -43,7 +43,7 @@ export async function subscribeToChannel(channelUsername: string) {
   // 3. Пытаемся вставить запись в таблицу
   try {
     await db.insert(subscriptions).values({
-      userId: session.user.id,
+      userId,
       channelUsername: cleanUsername,
     });
   } catch (error: any) {
@@ -63,10 +63,7 @@ export async function subscribeToChannel(channelUsername: string) {
 }
 
 export async function unsubscribeFromChannel(channelUsername: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error('Не авторизован');
-  }
+  const userId = await requireUserId();
 
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
@@ -75,7 +72,7 @@ export async function unsubscribeFromChannel(channelUsername: string) {
     .delete(subscriptions)
     .where(
       and(
-        eq(subscriptions.userId, session.user.id),
+        eq(subscriptions.userId, userId),
         eq(subscriptions.channelUsername, cleanUsername)
       )
     );

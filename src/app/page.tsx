@@ -1,9 +1,7 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import pb from '@/lib/pocketbase';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { NewsList } from '@/widgets/news-card/ui/NewsList';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +10,9 @@ interface PageProps {
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  // Проверка авторизации (пока через NextAuth)
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  // Проверка авторизации
+  const pb = await getServerPocketBase();
+  if (!pb.authStore.isValid) {
     redirect('/auth/signin');
   }
 
@@ -24,23 +22,21 @@ export default async function HomePage({ searchParams }: PageProps) {
   let filter = '';
   if (group) {
     try {
-      // Получаем группу и список её каналов
       const groupRecord = await pb.collection('groups').getOne(group);
       if (groupRecord?.channels?.length) {
         const channelList = groupRecord.channels.map(
           (ch: string) => `@${ch}`
         );
-        filter = channelList.map((ch) => `source = "${ch}"`).join(' || ');
+        filter = channelList
+          .map((ch: string) => `source = "${ch}"`)
+          .join(' || ');
       } else {
-        // Группа пуста – новостей нет
-        filter = 'id = ""'; // заведомо ложное условие, чтобы вернуть пустой результат
+        filter = 'id = ""';
       }
     } catch (e) {
       console.error('Ошибка получения группы:', e);
       filter = 'id = ""';
     }
-  } else if (channel) {
-    filter = `source = "@${channel.replace(/^@/, '')}"`;
   }
 
   // Запрос к PocketBase
