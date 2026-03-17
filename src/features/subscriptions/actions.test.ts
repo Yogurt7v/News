@@ -2,7 +2,7 @@ import {
   subscribeToChannel,
   unsubscribeFromChannel,
   getUserSubscriptions,
-} from './actions';
+} from './actions.pb';
 import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 

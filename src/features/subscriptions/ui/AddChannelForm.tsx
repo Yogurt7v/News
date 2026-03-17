@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
-import { subscribeToChannel } from '../actions';
+import { subscribeToChannel } from '../actions.pb';
 
 interface AddChannelFormProps {
   onSuccess?: () => void;
