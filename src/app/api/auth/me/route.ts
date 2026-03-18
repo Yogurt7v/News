@@ -7,12 +7,18 @@ export async function GET() {
     process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
   );
 
-  const cookieStore = cookies();
+  // 1. Обязательно добавляем await здесь
+  const cookieStore = await cookies();
+
+  // 2. Теперь .getAll() сработает, так как мы дождались Promise
   const cookieHeader = cookieStore
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
     .join('; ');
-  if (cookieHeader) pb.authStore.loadFromCookie(cookieHeader);
+
+  if (cookieHeader) {
+    pb.authStore.loadFromCookie(cookieHeader);
+  }
 
   if (!pb.authStore.isValid) {
     return NextResponse.json({ authenticated: false }, { status: 200 });
@@ -23,4 +29,3 @@ export async function GET() {
     { status: 200 }
   );
 }
-

@@ -1,12 +1,13 @@
+'use server';
+
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
-import { db } from '@/db';
-import { media, news } from '@/db/schema';
-import { eq, lt } from 'drizzle-orm';
-import { TelegramClient } from '@mtcute/node'; // Добавьте импорт типа
+import createServerClient from '@/shared/lib/pocketbase.server';
+import { TelegramClient } from '@mtcute/node';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import process from 'process';
+import type Client from 'pocketbase';
+import { createAdminClient } from '@/shared/lib/pocketbase-admin';
 
 export interface TelegramPost {
   id: number;
@@ -15,6 +16,7 @@ export interface TelegramPost {
   message: string;
   peerId: string;
   channelUsername?: string;
+  channelTitle?: string;
 }
 
 export interface TelegramPostMedia {
@@ -29,10 +31,15 @@ export interface TelegramPostMedia {
 }
 
 export class TelegramParserService {
-  /**
-   * Получить последние сообщения из канала
-   * ПЕРЕДАЕМ client как аргумент, чтобы не инициализировать его постоянно
-   */
+  private pbInstance: Client | null = null;
+
+  // Метод для безопасного получения инициализированного клиента
+  private async getPb(): Promise<Client> {
+    if (!this.pbInstance) {
+      this.pbInstance = await createAdminClient();
+    }
+    return this.pbInstance;
+  }
 
   async getChannelPosts(
     client: TelegramClient,
@@ -42,94 +49,62 @@ export class TelegramParserService {
     console.log(
       `📡 [getChannelPosts] Запрашиваю историю @${channelUsername}`
     );
-
     const messages = await client.getHistory(channelUsername, { limit });
-    console.log(
-      `📩 [getChannelPosts] Получено из API: ${messages.length} объектов`
-    );
 
     const groupedMessages = new Map<string, any[]>();
-
     for (const msg of messages) {
-      // Если это часть альбома, используем groupedId, иначе уникальный id сообщения
       const groupId = msg.groupedId
         ? `group_${msg.groupedId.toString()}`
         : `single_${msg.id}`;
-
       if (!groupedMessages.has(groupId)) {
         groupedMessages.set(groupId, []);
       }
       groupedMessages.get(groupId)!.push(msg);
     }
+
     const posts: TelegramPost[] = [];
 
     for (const [groupId, msgs] of groupedMessages) {
-      // Сортируем сообщения в группе по ID, чтобы текст (обычно он в первом) был предсказуем
       msgs.sort((a, b) => a.id - b.id);
-
-      const mainMsg = msgs[0]; // Берем первое сообщение как основу
-
-      // Собираем текст из всех сообщений группы (на случай, если подписи разные,
-      // хотя в ТГ подпись обычно одна на весь альбом)
+      const mainMsg = msgs[0];
       const fullText = msgs
         .map((m) => m.text || '')
         .filter(Boolean)
         .join('\n');
 
-      if (!fullText && !msgs.some((m) => m.media)) {
-        continue;
-      }
+      if (!fullText && !msgs.some((m) => m.media)) continue;
 
-      console.log(
-        `🔹 Обработка ${groupId} | Сообщений в группе: ${msgs.length}`
-      );
-
-      // Извлекаем медиа из ВСЕХ сообщений группы
       const allExtractedMedia: TelegramPostMedia[] = [];
       for (const msg of msgs) {
         if (msg.media) {
-          const mediaItem = await this.extractAllMedia(
-            msg.media,
-            client,
-            channelUsername,
-            mainMsg.id
-          );
+          const mediaItem = await this.extractAllMedia(msg.media, client);
           allExtractedMedia.push(...mediaItem);
         }
       }
 
       posts.push({
-        id: mainMsg.id, // ID берем от первого сообщения группы
+        id: mainMsg.id,
         date: mainMsg.date,
         message: fullText,
         peerId: mainMsg.chat.id.toString(),
         channelUsername: channelUsername.replace('@', ''),
+        channelTitle: mainMsg.chat?.title,
         media: allExtractedMedia,
       });
     }
 
-    console.log(
-      `✅ [getChannelPosts] Итог: сформировано ${posts.length} постов из ${messages.length} объектов API`
-    );
     return posts;
   }
-  /**
-
-   * Получить сообщения из нескольких каналов
-
-   */
 
   async getMultipleChannelsPosts(
     channels: string[],
     limitPerChannel: number = 5
   ): Promise<TelegramPost[]> {
-    // 1. Инициализируем клиент ОДИН РАЗ перед циклом
     const client = await getTelegramClient();
     const allPosts: TelegramPost[] = [];
 
     for (const channel of channels) {
       try {
-        // 2. Передаем готовый клиент в метод
         const posts = await this.getChannelPosts(
           client,
           channel,
@@ -137,25 +112,17 @@ export class TelegramParserService {
         );
         allPosts.push(...posts);
       } catch (error) {
-        console.error(
-          `Ошибка получения сообщений из канала @${channel}:`,
-          error
-        );
+        console.error(`Ошибка канала @${channel}:`, error);
       }
     }
     return allPosts;
   }
 
   private async extractAllMedia(
-    telegramMedia: any,
-    client: TelegramClient,
-    channelUsername: string,
-    postId: number
+    m: any,
+    client: TelegramClient
   ): Promise<TelegramPostMedia[]> {
     const result: TelegramPostMedia[] = [];
-    if (!telegramMedia) return result;
-
-    const m = telegramMedia;
     const mediaType =
       typeof m.type === 'string'
         ? m.type
@@ -170,14 +137,9 @@ export class TelegramParserService {
       try {
         const extension = type === 'video' ? 'mp4' : 'jpg';
         const fileName = `${m.fileId}.${extension}`;
-        const tmpDir = os.tmpdir();
-        const tmpPath = path.join(tmpDir, fileName);
+        const tmpPath = path.join(os.tmpdir(), fileName);
 
-        console.log(
-          `   📥 Скачиваю ${type} во временный файл: ${tmpPath}`
-        );
         await client.downloadToFile(tmpPath, m);
-        console.log(`   ✅ Временный файл сохранён`);
 
         result.push({
           type,
@@ -189,162 +151,112 @@ export class TelegramParserService {
           height: m.height,
         });
       } catch (e) {
-        console.error(`   ❌ Ошибка при скачивании файла ${m.fileId}:`, e);
+        console.error(`❌ Ошибка скачивания файла ${m.fileId}:`, e);
       }
     }
     return result;
   }
-  /**
-   * Преобразовать сообщение Telegram в формат новости
-   */
-
-  mapToNews(
-    post: TelegramPost
-  ): Omit<typeof news.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> {
-    const url = `https://t.me/${post.channelUsername}/${post.id}`;
-
-    return {
-      title: this.extractTitle(post.message) || 'Новость из Telegram',
-      content: post.message,
-      source: `@${post.channelUsername}`,
-      url,
-      publishedAt: post.date,
-      categoryId: null,
-
-      // imageUrl больше не нужен
-    };
-  }
 
   private extractTitle(message: string): string | null {
     if (!message) return null;
-
     const firstLine = message.split('\n')[0].trim();
-
     return firstLine.length > 100
       ? firstLine.slice(0, 97) + '...'
       : firstLine;
   }
 
-  /**
-   * Сохранить новости в БД (только новые)
-   */
+  mapToNews(post: TelegramPost) {
+    return {
+      title: this.extractTitle(post.message) || 'Новость из Telegram',
+      content: post.message,
+      source: `@${post.channelUsername}`,
+      url: `https://t.me/${post.channelUsername}/${post.id}`,
+      publishedAt: post.date.toISOString(),
+      channelUsername: post.channelUsername,
+      channelTitle: post.channelTitle || '',
+    };
+  }
 
-  async saveNews(posts: TelegramPost[]): Promise<number> {
-    let savedCount = 0;
+  async saveNews(post: TelegramPost): Promise<boolean> {
+    const pb = await this.getPb();
+    const newsUrl = `https://t.me/${post.channelUsername}/${post.id}`;
 
-    for (const post of posts) {
+    try {
+      const existing = await pb
+        .collection('news')
+        .getFirstListItem(`url = "${newsUrl}"`)
+        .catch(() => null);
+
+      if (existing) {
+        if (post.media) {
+          await Promise.all(
+            post.media.map((m) => fs.unlink(m.tempPath).catch(() => {}))
+          );
+        }
+        return false;
+      }
+
       const newsData = this.mapToNews(post);
+      const newNews = await pb.collection('news').create(newsData);
 
-      // 1. Проверяем, есть ли уже такая новость (по URL или другому уникальному полю)
+      if (post.media && post.media.length > 0) {
+        const mediaPromises = post.media.map(async (m, i) => {
+          try {
+            const fileBuffer = await fs.readFile(m.tempPath);
+            const fileName =
+              m.fileName ||
+              `file${i}.${m.type === 'video' ? 'mp4' : 'jpg'}`;
 
-      const existing = await db.query.news.findFirst({
-        where: eq(news.url, newsData.url),
-      });
+            const data = new FormData();
+            data.append('newsId', newNews.id);
+            data.append('type', m.type);
+            data.append('order', i.toString());
+            data.append('mimeType', m.mimeType || '');
+            data.append('width', (m.width || 0).toString());
+            data.append('height', (m.height || 0).toString());
 
-      if (existing) continue;
+            // Используем Blob для совместимости с FormData в серверном окружении
+            const fileBlob = new Blob([fileBuffer], { type: m.mimeType });
+            data.append('file', fileBlob, fileName);
 
-      try {
-        // 2. Используем транзакцию: либо сохраняется всё, либо ничего
-
-        await db.transaction(async (tx) => {
-          // Вставляем основную запись новости
-          const [newNews] = await tx
-            .insert(news)
-            .values(newsData)
-            .returning({ id: news.id }); // Получаем сгенерированный UUID
-
-          // 3. Подготавливаем список медиа для вставки
-
-          if (post.media && post.media.length > 0) {
-            const mediaToInsert = post.media.map((m) => ({
-              newsId: newNews.id, // Тот самый UUID из вставленной записи
-              type: m.type,
-              url: m.url || '',
-              mimeType: m.mimeType || '',
-              fieldName: m.fileName || '',
-            }));
-
-            // Вставляем все медиа одним запросом (Batch Insert)
-
-            await tx.insert(media).values(mediaToInsert);
+            await pb.collection('media').create(data, {
+              requestKey: null, // ЭТО ОТКЛЮЧИТ АВТО-ОТМЕНУ
+            });
+            await fs.unlink(m.tempPath).catch(() => {});
+          } catch (err) {
+            console.error(
+              `❌ Ошибка медиа для новости ${newNews.id}:`,
+              err
+            );
           }
         });
 
-        savedCount++;
-      } catch (error) {
-        console.error(`Ошибка при сохранении новости ${post.id}:`, error);
+        await Promise.all(mediaPromises);
       }
+      return true;
+    } catch (err) {
+      console.error(`❌ Ошибка сохранения новости ${newsUrl}:`, err);
+      return false;
+    }
+  }
+
+  async saveAllNews(posts: TelegramPost[]): Promise<number> {
+    let savedCount = 0;
+    for (const post of posts) {
+      if (await this.saveNews(post)) savedCount++;
     }
     return savedCount;
   }
 
-  async cleanupOldMedia(days: number): Promise<void> {
-    const thresholdDate = new Date();
-    thresholdDate.setDate(thresholdDate.getDate() - days);
-
-    console.log(
-      `🧹 [Cleanup] Начинаю очистку медиа старше ${days} дней (до ${thresholdDate.toISOString()})`
-    );
-
-    try {
-      // 1. Находим в БД все медиа, которые старше порога
-      // Важно: мы ориентируемся на дату создания записи в БД
-      const oldMediaEntries = await db.query.media.findMany({
-        where: lt(media.createdAt, thresholdDate),
-      });
-
-      if (oldMediaEntries.length === 0) {
-        console.log('🧹 [Cleanup] Старых медиа не обнаружено.');
-        return;
-      }
-
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
-      for (const entry of oldMediaEntries) {
-        // У тебя в поле url хранится путь типа "/uploads/file.jpg"
-        // Нам нужно вытащить только имя файла
-        const fileName = path.basename(entry.url);
-        const filePath = path.join(uploadDir, fileName);
-
-        try {
-          // 2. Удаляем файл с диска
-          await fs.access(filePath); // Проверяем, существует ли он
-          await fs.unlink(filePath);
-          console.log(`🗑️  Файл удален: ${fileName}`);
-        } catch (e) {
-          console.log(`⚠️  Файл уже отсутствует на диске: ${fileName}`);
-        }
-      }
-
-      // 3. Удаляем записи из БД (одним запросом)
-      const deletedIds = oldMediaEntries.map((m) => m.id);
-      await db.delete(media).where(lt(media.createdAt, thresholdDate));
-
-      console.log(
-        `✅ [Cleanup] Удалено записей из БД: ${deletedIds.length}`
-      );
-    } catch (error) {
-      console.error('❌ [Cleanup] Ошибка при очистке:', error);
-    }
-  }
-
-  /**
-   * Основной метод
-   */
-
   async fetchAndSaveNews(
     channels: string[],
-
     limitPerChannel: number = 5
   ): Promise<number> {
-    await this.cleanupOldMedia(parseInt(process.env.MEDIA_GETS_OLD!));
     const posts = await this.getMultipleChannelsPosts(
       channels,
-
       limitPerChannel
     );
-
-    return this.saveNews(posts);
+    return this.saveAllNews(posts);
   }
 }
 

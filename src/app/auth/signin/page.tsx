@@ -34,7 +34,9 @@ function SignInContent() {
     };
   }, [router, callbackUrl]);
 
-  const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCredentialsSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -178,7 +180,9 @@ function SignInContent() {
                     />
                   </svg>
                   <span>
-                    {oauthLoading === 'google' ? 'Перенаправляем…' : 'Google'}
+                    {oauthLoading === 'google'
+                      ? 'Перенаправляем…'
+                      : 'Google'}
                   </span>
                 </button>
 
@@ -195,7 +199,9 @@ function SignInContent() {
                     />
                   </svg>
                   <span>
-                    {oauthLoading === 'yandex' ? 'Перенаправляем…' : 'Яндекс'}
+                    {oauthLoading === 'yandex'
+                      ? 'Перенаправляем…'
+                      : 'Яндекс'}
                   </span>
                 </button>
 
@@ -217,7 +223,9 @@ function SignInContent() {
                     />
                   </svg>
                   <span>
-                    {oauthLoading === 'github' ? 'Перенаправляем…' : 'GitHub'}
+                    {oauthLoading === 'github'
+                      ? 'Перенаправляем…'
+                      : 'GitHub'}
                   </span>
                 </button>
 

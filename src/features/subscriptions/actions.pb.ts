@@ -1,11 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
+import createServerClient from '@/shared/lib/pocketbase.server';
 
 // Вспомогательная функция для получения авторизованного пользователя
 async function getCurrentUserId(): Promise<string> {
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const userId = pb.authStore.record?.id;
   if (!pb.authStore.isValid || !userId) throw new Error('Не авторизован');
   return userId;
@@ -17,7 +17,7 @@ export async function subscribeToChannel(channelUsername: string) {
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
   try {
-    const pb = await getServerPocketBase();
+    const pb = await createServerClient();
     await pb.collection('subscriptions').create({
       userId,
       channelUsername: cleanUsername,
@@ -41,7 +41,7 @@ export async function unsubscribeFromChannel(channelUsername: string) {
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
   // Находим запись подписки
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const subscription = await pb
     .collection('subscriptions')
     .getFirstListItem(
@@ -59,7 +59,7 @@ export async function unsubscribeFromChannel(channelUsername: string) {
 // Получить список подписок текущего пользователя
 export async function getUserSubscriptions(): Promise<string[]> {
   const userId = await getCurrentUserId();
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const records = await pb.collection('subscriptions').getFullList({
     filter: `userId = "${userId}"`,
     sort: 'channelUsername',
@@ -70,7 +70,7 @@ export async function getUserSubscriptions(): Promise<string[]> {
 // Создать группу
 export async function createGroup(name: string) {
   const userId = await getCurrentUserId();
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const group = await pb.collection('groups').create({
     userId,
     name,
@@ -83,7 +83,7 @@ export async function createGroup(name: string) {
 // Получить группы пользователя с каналами
 export async function getUserGroups() {
   const userId = await getCurrentUserId();
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const records = await pb.collection('groups').getFullList({
     filter: `userId = "${userId}"`,
     sort: 'name',
@@ -104,7 +104,7 @@ export async function addChannelToGroup(
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
   // Проверим, что группа принадлежит пользователю
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
 
@@ -125,7 +125,7 @@ export async function removeChannelFromGroup(
   const userId = await getCurrentUserId();
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
 
@@ -139,7 +139,7 @@ export async function removeChannelFromGroup(
 // Удалить группу
 export async function deleteGroup(groupId: string) {
   const userId = await getCurrentUserId();
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
   await pb.collection('groups').delete(groupId);
@@ -149,7 +149,7 @@ export async function deleteGroup(groupId: string) {
 // Переименовать группу
 export async function renameGroup(groupId: string, newName: string) {
   const userId = await getCurrentUserId();
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
   await pb.collection('groups').update(groupId, { name: newName });

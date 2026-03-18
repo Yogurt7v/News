@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { NewsList } from '@/widgets/news-card/ui/NewsList';
-import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
+import createServerClient from '@/shared/lib/pocketbase.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ interface PageProps {
 
 export default async function HomePage({ searchParams }: PageProps) {
   // Проверка авторизации
-  const pb = await getServerPocketBase();
+  const pb = await createServerClient();
   if (!pb.authStore.isValid) {
     redirect('/auth/signin');
   }
