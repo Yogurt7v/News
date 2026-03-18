@@ -9,7 +9,7 @@ function SignInContent() {
   const router = useRouter();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
-  const [showCredentials, setShowCredentials] = useState(true);
+  const [showCredentials, setShowCredentials] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<
