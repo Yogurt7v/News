@@ -5,38 +5,80 @@ import PocketBase from 'pocketbase';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. ОПРЕДЕЛЯЕМ ИСКЛЮЧЕНИЯ (Пути, которые не требуют проверки)
-  // Добавьте сюда всё, что должно быть доступно без входа
+  // 1. ИСКЛЮЧЕНИЯ (Пути, которые не трогаем)
   if (
-    pathname.startsWith('/auth') || // страницы входа и регистрации
-    pathname.startsWith('/_next') || // служебные файлы Next.js
-    pathname.startsWith('/api') ||   // ваши API роуты
-    pathname === '/favicon.ico'      // иконка
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname === '/favicon.ico'
   ) {
     return NextResponse.next();
   }
 
-  // 2. ПРОВЕРКА АВТОРИЗАЦИИ
-  const pb = new PocketBase('http://127.0.0.1:8090');
-  // PocketBase ожидает строку cookie заголовка вида "a=b; c=d"
-  pb.authStore.loadFromCookie(request.headers.get('cookie') ?? '');
+  const pb = new PocketBase(
+    process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
+  );
 
-  // 3. РЕДИРЕКТ ТОЛЬКО ЕСЛИ НЕТ СЕССИИ
-  if (!pb.authStore.isValid) {
-    const url = new URL('/auth/signin', request.url);
-    // Сохраняем путь, куда хотел попасть пользователь
-    url.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(url);
+  // 2. ЗАГРУЗКА СЕССИИ
+  // Получаем значение куки напрямую
+  const authCookie = request.cookies.get('pb_auth')?.value;
+
+  if (authCookie) {
+    try {
+      // КРИТИЧЕСКИЙ МОМЕНТ:
+      // SDK ожидает строку формата "имя=значение", чтобы правильно распарсить её в AuthStore
+      pb.authStore.loadFromCookie(`pb_auth=${authCookie}`, 'pb_auth');
+    } catch (e) {
+      console.error('Middleware Cookie Parse Error:', e);
+      pb.authStore.clear();
+    }
   }
 
-  return NextResponse.next();
+  // 3. ПРОВЕРКА АВТОРИЗАЦИИ
+  if (!pb.authStore.isValid) {
+    const url = new URL('/auth/signin', request.url);
+    // Сохраняем путь для возврата после логина
+    url.searchParams.set('callbackUrl', pathname);
+
+    const response = NextResponse.redirect(url);
+    // На всякий случай чистим битую куку при редиректе
+    response.cookies.delete('pb_auth');
+    return response;
+  }
+
+  // 4. ОБНОВЛЕНИЕ ТОКЕНА (Опционально, для продления сессии)
+  const response = NextResponse.next();
+
+  try {
+    // Если токен валиден, мы можем попытаться его освежить
+    // Это гарантирует, что сессия не прервется во время работы
+    if (pb.authStore.isValid) {
+      // Мы не делаем await здесь, чтобы не замедлять каждый запрос,
+      // либо делаем только если нужно обновить данные профиля
+    }
+
+    // Передаем куку дальше, чтобы браузер её обновил (Path, HttpOnly и т.д.)
+    response.cookies.set(
+      'pb_auth',
+      pb.authStore.exportToCookie({ httpOnly: true }).split('=')[1],
+      {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        httpOnly: true,
+      }
+    );
+  } catch (err) {
+    console.error('Session refresh failed:', err);
+  }
+
+  return response;
 }
 
-// 4. ОПЦИОНАЛЬНО: Используйте matcher для производительности
 export const config = {
   matcher: [
     /*
-     * Исключаем стандартные пути, чтобы middleware не срабатывал на картинки и скрипты
+     * Обрабатываем все пути, кроме статики и картинок
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],

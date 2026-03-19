@@ -1,31 +1,18 @@
 import { NextResponse } from 'next/server';
-import PocketBase from 'pocketbase';
 import { cookies } from 'next/headers';
 
 export async function GET() {
-  const pb = new PocketBase(
-    process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
-  );
-
-  // 1. Обязательно добавляем await здесь
   const cookieStore = await cookies();
+  const pbAuth = cookieStore.get('pb_auth');
 
-  // 2. Теперь .getAll() сработает, так как мы дождались Promise
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join('; ');
-
-  if (cookieHeader) {
-    pb.authStore.loadFromCookie(cookieHeader);
+  if (!pbAuth) {
+    return NextResponse.json({ user: null }, { status: 401 });
   }
 
-  if (!pb.authStore.isValid) {
-    return NextResponse.json({ authenticated: false }, { status: 200 });
+  try {
+    const data = JSON.parse(pbAuth.value);
+    return NextResponse.json({ user: data.model });
+  } catch {
+    return NextResponse.json({ user: null }, { status: 401 });
   }
-
-  return NextResponse.json(
-    { authenticated: true, user: pb.authStore.record },
-    { status: 200 }
-  );
 }

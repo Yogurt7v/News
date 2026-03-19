@@ -1,76 +1,67 @@
-import { NextResponse } from 'next/server';
-import PocketBase from 'pocketbase';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-
+export async function GET(request: NextRequest) {
+  const code = request.nextUrl.searchParams.get('code');
+  const state = request.nextUrl.searchParams.get('state');
   const cookieStore = await cookies();
   const oauthCookie = cookieStore.get('pb_oauth');
 
-  if (!code || !state || !oauthCookie) {
-    return NextResponse.json(
-      { error: 'Session expired or invalid request' },
-      { status: 400 }
+  if (!code || !oauthCookie) {
+    return NextResponse.redirect(
+      new URL('/auth/signin?error=no_data', request.nextUrl.origin)
     );
   }
 
-  let payload: any;
-  try {
-    payload = JSON.parse(oauthCookie.value);
-  } catch {
-    return NextResponse.json(
-      { error: 'Invalid session data' },
-      { status: 400 }
+  const payload = JSON.parse(oauthCookie.value);
+  if (state !== payload.state) {
+    return NextResponse.redirect(
+      new URL('/auth/signin?error=state_mismatch', request.nextUrl.origin)
     );
   }
-
-  // Проверка CSRF (state из URL должен совпасть со state из куки)
-  if (payload.state !== state) {
-    return NextResponse.json({ error: 'State mismatch' }, { status: 400 });
-  }
-
-  const pb = new PocketBase(
-    process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
-  );
 
   try {
-    // Финальный шаг авторизации в PocketBase
-    await pb.collection('users').authWithOAuth2({
-      provider: payload.provider,
-      code,
-      codeVerifier: payload.codeVerifier,
-      redirectUrl: payload.redirectUrl,
-    });
-
-    // Редирект на главную или туда, откуда пришли
-    const response = NextResponse.redirect(
-      new URL(payload.callbackUrl || '/', url.origin)
+    const res = await fetch(
+      `${process.env.POCKETBASE_URL}/api/collections/users/auth-with-oauth2`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: payload.provider,
+          code,
+          codeVerifier: payload.codeVerifier,
+          redirectUrl: payload.redirectUrl,
+        }),
+      }
     );
 
-    // Очищаем временную OAuth куку
-    response.cookies.delete('pb_oauth');
+    const authData = await res.json();
+    if (!res.ok) throw new Error('PB Auth Failed');
 
-    // Экспортируем сессию PocketBase в основную куку pb_auth
-    // httpOnly: false позволяет клиентскому SDK видеть токен (нужно для фото и т.д.)
-    response.headers.set(
-      'Set-Cookie',
-      pb.authStore.exportToCookie({
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
+    const finalResponse = NextResponse.redirect(
+      new URL(payload.callbackUrl, request.nextUrl.origin)
+    );
+
+    // Сохраняем сессию в формате PocketBase
+    finalResponse.cookies.set(
+      'pb_auth',
+      JSON.stringify({
+        token: authData.token,
+        model: authData.record,
+      }),
+      {
         path: '/',
-      })
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      }
     );
 
-    return response;
-  } catch (err: any) {
-    console.error('PB Auth Callback Error:', err);
-    return NextResponse.json(
-      { error: err.message, details: err.data },
-      { status: 400 }
+    finalResponse.cookies.delete('pb_oauth');
+    return finalResponse;
+  } catch (err) {
+    return NextResponse.redirect(
+      new URL('/auth/signin?error=auth_failed', request.nextUrl.origin)
     );
   }
 }
