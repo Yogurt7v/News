@@ -206,7 +206,7 @@ function SignInContent() {
                 </button>
 
                 {/* GitHub */}
-                <button
+                {/* <button
                   onClick={() => startOAuth('github')}
                   disabled={oauthLoading !== null}
                   className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98] disabled:opacity-60"
@@ -227,7 +227,7 @@ function SignInContent() {
                       ? 'Перенаправляем…'
                       : 'GitHub'}
                   </span>
-                </button>
+                </button> */}
 
                 {error && (
                   <div className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl animate-in shake-in duration-300">

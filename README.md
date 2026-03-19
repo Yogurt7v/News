@@ -1,10 +1,8 @@
-npx drizzle-kit studio
+./pocketbase serve
 test@test.ru
-123456
+12345678
 
 сделать переходы по "фильтрам"
-
-./pocketbase serve
 
 1. подключить юзеров через гугл яндекс и гит
 2. деплой
