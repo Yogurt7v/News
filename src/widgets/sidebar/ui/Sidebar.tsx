@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { AddChannelForm } from '@/features/subscriptions/ui/AddChannelForm';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
+import { AddChannelSlide } from '@/features/subscriptions/ui/AddChannelSlide';
 import {
   unsubscribeFromChannel,
   getUserSubscriptions,
@@ -26,7 +26,6 @@ interface GroupWithChannels {
   channels: ChannelInfo[];
 }
 
-// --- Универсальный UI компонент модалки ---
 interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,22 +45,20 @@ function ConfirmModal({
 }: ConfirmModalProps) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-2xl border border-gray-100 dark:border-[#2a2a2c] p-6 animate-in zoom-in-95 duration-200">
-        <h3 className="text-lg font-bold mb-2 text-[#1c1c1e] dark:text-white">
-          {title}
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <div className="relative w-full max-w-sm bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-black/5 dark:border-white/10 p-6 animate-scale-in">
+        <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
+        <p className="text-sm text-black/50 dark:text-white/50 mb-6">
           {message}
         </p>
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-[#2a2a2c] text-sm font-semibold hover:bg-gray-200 dark:hover:bg-[#3a3a3c] transition-colors"
+            className="flex-1 px-5 py-3 rounded-2xl bg-black/5 dark:bg-white/10 text-sm font-semibold hover:bg-black/10 dark:hover:bg-white/15 transition-all"
           >
             Отмена
           </button>
@@ -70,7 +67,11 @@ function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white ${variant === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-[#229ED9] hover:bg-[#1b8ec2]'}`}
+            className={`flex-1 px-5 py-3 rounded-2xl text-sm font-semibold text-white transition-all ${
+              variant === 'danger'
+                ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25'
+                : 'bg-[#229ED9] hover:bg-[#1b8ec2] shadow-lg shadow-[#229ED9]/25'
+            }`}
           >
             Подтвердить
           </button>
@@ -80,7 +81,6 @@ function ConfirmModal({
   );
 }
 
-// --- ОСНОВНОЙ КОМПОНЕНТ SIDEBAR ---
 export function Sidebar() {
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [groups, setGroups] = useState<GroupWithChannels[]>([]);
@@ -88,7 +88,6 @@ export function Sidebar() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Состояния для редактирования и удаления
   const [editingGroupId, setEditingGroupId] = useState<string | null>(
     null
   );
@@ -98,20 +97,17 @@ export function Sidebar() {
     name: string;
   } | null>(null);
 
-  // Состояние кастомной модалки подтверждения
-  const [confirmData, setConfirmData] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    variant: 'danger' | 'primary';
-  }>({
+  const [confirmData, setConfirmData] = useState<ConfirmModalProps>({
     isOpen: false,
     title: '',
     message: '',
     onConfirm: () => {},
     variant: 'primary',
+    onClose: () => setConfirmData((prev) => ({ ...prev, isOpen: false })),
   });
+
+  const closeConfirm = () =>
+    setConfirmData((prev) => ({ ...prev, isOpen: false }));
 
   const router = useRouter();
   const pathname = usePathname();
@@ -140,19 +136,19 @@ export function Sidebar() {
   };
 
   const confirmLogout = () => {
-    openConfirm(
-      'Выйти?',
-      'Вы уверены, что хотите выйти из аккаунта?',
-      handleLogout,
-      'danger'
-    );
+    setConfirmData({
+      isOpen: true,
+      title: 'Выйти?',
+      message: 'Вы уверены, что хотите выйти из аккаунта?',
+      onConfirm: handleLogout,
+      variant: 'danger',
+      onClose: closeConfirm,
+    });
   };
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
-
-  // --- ЛОГИКА ---
 
   const openConfirm = (
     title: string,
@@ -160,7 +156,14 @@ export function Sidebar() {
     onConfirm: () => void,
     variant: 'danger' | 'primary' = 'primary'
   ) => {
-    setConfirmData({ isOpen: true, title, message, onConfirm, variant });
+    setConfirmData({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      variant,
+      onClose: closeConfirm,
+    });
   };
 
   const handleRenameGroup = async (id: string) => {
@@ -169,7 +172,7 @@ export function Sidebar() {
       await renameGroup(id, editName);
       setEditingGroupId(null);
       refreshData();
-    } catch (e) {
+    } catch {
       openConfirm('Ошибка', 'Не удалось переименовать папку', () => {});
     }
   };
@@ -218,76 +221,90 @@ export function Sidebar() {
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col bg-white dark:bg-[#1c1c1e] text-[#1c1c1e] dark:text-white transition-colors duration-200">
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-[#2a2a2c]">
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => router.push('/')}
-        >
-          <div className="w-10 h-10 rounded-full bg-[#229ED9] flex items-center justify-center text-white shadow-sm font-bold">
-            N
-          </div>
-          <h2 className="font-bold text-lg tracking-tight">Новости</h2>
-        </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2c] transition-colors"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
+    <div className="h-full flex flex-col bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-xl text-foreground">
+      <div className="p-5 border-b border-black/5 dark:border-white/5">
+        <div className="flex items-center justify-between">
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => router.push('/')}
           >
-            <path d="M12 5V19M5 12H19" strokeLinecap="round" />
-          </svg>
-        </button>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1b8ec2] flex items-center justify-center text-white shadow-lg shadow-[#229ED9]/30 group-hover:shadow-xl group-hover:shadow-[#229ED9]/40 transition-all">
+              <span className="text-xl font-bold">N</span>
+            </div>
+            <div>
+              <h2 className="font-bold text-lg tracking-tight">Новости</h2>
+              <p className="text-xs text-black/40 dark:text-white/40">
+                Ваша лента
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="w-11 h-11 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/20 transition-all flex items-center justify-center active:scale-95"
+          >
+            <svg
+              className="w-5 h-5 text-[#229ED9]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {showAddForm && (
-        <div className="p-4 bg-gray-50 dark:bg-[#242426] border-b dark:border-[#2a2a2c]">
-          <AddChannelForm
-            onSuccess={() => {
-              setShowAddForm(false);
-              refreshData();
-            }}
-          />
-        </div>
-      )}
-
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-        {/* Все посты */}
-        <div
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        <button
           onClick={() => {
             router.push(pathname);
             setMobileOpen(false);
           }}
-          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${!currentChannel && !currentGroupId ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+          className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
+            !currentChannel && !currentGroupId
+              ? 'bg-[#229ED9] text-white shadow-lg shadow-[#229ED9]/30'
+              : 'hover:bg-white/60 dark:hover:bg-white/5'
+          }`}
         >
-          <span className="text-xl">📱</span>
-          <span className="font-semibold text-[15px]">Все посты</span>
-        </div>
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              !currentChannel && !currentGroupId
+                ? 'bg-white/20'
+                : 'bg-black/5 dark:bg-white/10'
+            }`}
+          >
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <path d="M9 22V12h6v10" />
+            </svg>
+          </div>
+          <span className="font-semibold">Все посты</span>
+        </button>
 
-        <div className="my-3 border-t dark:border-white/5 mx-2" />
+        <div className="h-px bg-gradient-to-r from-transparent via-black/5 dark:via-white/5 to-transparent my-4" />
 
-        {/* ПАПКИ */}
-        <div className="px-2 mb-2 flex items-center justify-between">
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+        <div className="flex items-center justify-between px-2 mb-3">
+          <p className="text-[11px] font-semibold tracking-wider text-black/40 dark:text-white/40 uppercase">
             Папки
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="text-[11px] text-[#229ED9] font-bold hover:underline"
+            className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
           >
-            СОЗДАТЬ
+            + Создать
           </button>
         </div>
 
         {groups.map((group) => (
-          <div key={group.id} className="group/folder">
-            <div
+          <div key={group.id} className="space-y-1">
+            <button
               onClick={() => {
                 const params = new URLSearchParams(searchParams);
                 params.set('group', group.id);
@@ -295,36 +312,46 @@ export function Sidebar() {
                 router.push(`${pathname}?${params.toString()}`);
                 setMobileOpen(false);
               }}
-              className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentGroupId === group.id ? 'bg-blue-50 dark:bg-[#229ED9]/10 text-[#229ED9]' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+              className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
+                currentGroupId === group.id
+                  ? 'bg-[#229ED9]/10 border border-[#229ED9]/20'
+                  : 'hover:bg-white/60 dark:hover:bg-white/5'
+              }`}
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-lg">📁</span>
-                {editingGroupId === group.id ? (
-                  <input
-                    autoFocus
-                    className="bg-white dark:bg-[#2a2a2c] border border-blue-500 rounded px-1 text-[15px] w-full outline-none"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onBlur={() => handleRenameGroup(group.id)}
-                    onKeyDown={(e) =>
-                      e.key === 'Enter' && handleRenameGroup(group.id)
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <span className="font-medium text-[15px] truncate">
-                    {group.name}
-                  </span>
-                )}
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                  currentGroupId === group.id
+                    ? 'bg-[#229ED9]/20'
+                    : 'bg-black/5 dark:bg-white/10'
+                }`}
+              >
+                <span className="text-base">📁</span>
               </div>
-              <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {editingGroupId === group.id ? (
+                <input
+                  autoFocus
+                  className="flex-1 bg-white/60 dark:bg-white/10 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#229ED9]/50"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onBlur={() => handleRenameGroup(group.id)}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' && handleRenameGroup(group.id)
+                  }
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="flex-1 text-left font-medium truncate">
+                  {group.name}
+                </span>
+              )}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingGroupId(group.id);
                     setEditName(group.name);
                   }}
-                  className="p-1 hover:text-blue-500 text-gray-400"
+                  className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-xs transition-all"
                 >
                   ✎
                 </button>
@@ -333,97 +360,169 @@ export function Sidebar() {
                     e.stopPropagation();
                     setGroupToDelete({ id: group.id, name: group.name });
                   }}
-                  className="p-1 hover:text-red-500 text-gray-400"
+                  className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-xs transition-all text-black/40 hover:text-red-500"
                 >
                   ✕
                 </button>
               </div>
-            </div>
+            </button>
 
-            {/* Каналы внутри папки (аккордеон) */}
-            {currentGroupId === group.id &&
-              group.channels?.map((ch: ChannelInfo) => (
-                <div
-                  key={ch.username}
-                  className="ml-9 mr-2 p-2 flex items-center justify-between text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg group/ch"
-                >
-                  <span className="truncate" title={ch.username}>
-                    {ch.title}
-                  </span>
+            {currentGroupId === group.id && group.channels.length > 0 && (
+              <div className="ml-4 pl-4 border-l border-black/5 dark:border-white/5 space-y-0.5">
+                {group.channels.map((ch) => (
                   <button
+                    key={ch.username}
                     onClick={(e) => handleRemoveFromGroup(e, group.id, ch)}
-                    className="opacity-0 group-ch/hover:opacity-100 text-[10px] hover:text-red-500 transition-opacity"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-sm text-black/60 dark:text-white/60 transition-all group-hover/ch:opacity-100"
                   >
-                    убрать
+                    <span className="truncate flex-1 text-left">
+                      {ch.title}
+                    </span>
+                    <span className="text-[10px] text-red-500 opacity-0 group-hover:opacity-100">
+                      убрать
+                    </span>
                   </button>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
           </div>
         ))}
 
-        <div className="my-3 border-t dark:border-white/5 mx-2" />
+        <div className="h-px bg-gradient-to-r from-transparent via-black/5 dark:via-white/5 to-transparent my-4" />
 
-        {/* КАНАЛЫ (Плоский список) */}
-        <p className="px-2 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+        <p className="text-[11px] font-semibold tracking-wider text-black/40 dark:text-white/40 uppercase px-2 mb-3">
           Каналы
         </p>
-        {channels.map((channel) => (
-          <div
-            key={channel.username}
-            onClick={() => {
-              const p = new URLSearchParams();
-              p.set('channel', channel.username);
-              router.push(`${pathname}?${p.toString()}`);
-              setMobileOpen(false);
-            }}
-            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel.username ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[14px] font-medium truncate">
-                {channel.title}
-              </span>
-              {/* {channel.username !== channel.title && (
-                <span className="text-[12px] text-gray-400 truncate shrink-0">
-                  @{channel.username}
-                </span>
-              )} */}
-            </div>
-            <button
-              onClick={(e) => handleUnsubscribe(e, channel)}
-              className={`opacity-0 group-hover:opacity-100 p-1 transition-opacity ${currentChannel === channel.username ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'}`}
-            >
+
+        {channels.length === 0 ? (
+          <div className="text-center py-8 px-4">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-black/5 dark:bg-white/5 flex items-center justify-center">
               <svg
+                className="w-8 h-8 text-black/20 dark:text-white/20"
                 viewBox="0 0 24 24"
-                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.5"
               >
-                <path
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-            </button>
+            </div>
+            <p className="text-sm font-medium text-black/40 dark:text-white/40">
+              Нет подписок
+            </p>
+            <p className="text-xs text-black/30 dark:text-white/30 mt-1">
+              Нажмите + чтобы добавить канал
+            </p>
           </div>
-        ))}
+        ) : (
+          <div className="space-y-1">
+            {channels.map((channel) => (
+              <button
+                key={channel.username}
+                onClick={() => {
+                  const p = new URLSearchParams();
+                  p.set('channel', channel.username);
+                  router.push(`${pathname}?${p.toString()}`);
+                  setMobileOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group ${
+                  currentChannel === channel.username
+                    ? 'bg-[#229ED9] text-white shadow-lg shadow-[#229ED9]/30'
+                    : 'hover:bg-white/60 dark:hover:bg-white/5'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    currentChannel === channel.username
+                      ? 'bg-white/20'
+                      : 'bg-black/5 dark:bg-white/10'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                    <path d="M9 9l6 3-6 3V9z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <span className="font-medium truncate block">
+                    {channel.title}
+                  </span>
+                  {channel.username !== channel.title && (
+                    <span
+                      className={`text-xs truncate block ${
+                        currentChannel === channel.username
+                          ? 'text-white/60'
+                          : 'text-black/40 dark:text-white/40'
+                      }`}
+                    >
+                      @{channel.username}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => handleUnsubscribe(e, channel)}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                    currentChannel === channel.username
+                      ? 'hover:bg-white/20 text-white/60 hover:text-white'
+                      : 'hover:bg-red-500/10 text-black/30 dark:text-white/30 hover:text-red-500 opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </button>
+            ))}
+          </div>
+        )}
       </nav>
-      <div className="p-4 border-t border-gray-200 dark:border-[#2a2a2c] ">
+
+      <div className="p-4 border-t border-black/5 dark:border-white/5">
         <button
           onClick={confirmLogout}
-          className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-[#343437] text-gray-700 dark:text-gray-300 rounded-xl px-4 py-2 text-sm font-medium transition"
+          className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all font-medium"
         >
           <svg
-            viewBox="0 0 24 24"
             className="w-5 h-5"
+            viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
           >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
+            <path
+              d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline
+              points="16 17 21 12 16 7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <line
+              x1="21"
+              y1="12"
+              x2="9"
+              y2="12"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
           Выйти
         </button>
@@ -433,18 +532,17 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="hidden md:block w-72 shrink-0 border-r border-gray-100 dark:border-[#2a2a2c] h-screen sticky top-0 bg-white dark:bg-[#1c1c1e]">
+      <aside className="hidden md:block w-80 shrink-0 h-screen sticky top-0">
         {sidebarContent}
       </aside>
 
-      {/* Моб. кнопка */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#229ED9] text-white rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-transform"
+        className="md:hidden fixed top-3 right-6 z-[100] w-14 h-14 bg-[#229ED9] text-white rounded-2xl shadow-lg shadow-[#229ED9]/40 flex items-center justify-center active:scale-90 transition-transform"
       >
         <svg
+          className="w-6 h-6"
           viewBox="0 0 24 24"
-          className="w-7 h-7"
           fill="none"
           stroke="currentColor"
           strokeWidth="2.5"
@@ -453,20 +551,18 @@ export function Sidebar() {
         </svg>
       </button>
 
-      {/* Моб. меню */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute top-0 left-0 h-full w-[85%] max-w-[300px] shadow-2xl animate-in slide-in-from-left duration-300 bg-white dark:bg-[#1c1c1e]">
+          <aside className="absolute top-0 left-0 h-full w-[85%] max-w-[320px] shadow-2xl animate-slide-in-right">
             {sidebarContent}
           </aside>
         </div>
       )}
 
-      {/* ВСЕ МОДАЛКИ */}
       <ConfirmModal
         isOpen={confirmData.isOpen}
         onClose={() => setConfirmData({ ...confirmData, isOpen: false })}
@@ -500,6 +596,15 @@ export function Sidebar() {
           }}
         />
       )}
+
+      <AddChannelSlide
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={() => {
+          setShowAddForm(false);
+          refreshData();
+        }}
+      />
     </>
   );
 }
