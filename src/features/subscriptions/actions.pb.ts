@@ -3,6 +3,17 @@
 import { revalidatePath } from 'next/cache';
 import createServerClient from '@/shared/lib/pocketbase.server';
 
+interface ChannelInfo {
+  username: string;
+  title: string;
+}
+
+interface GroupWithChannels {
+  id: string;
+  name: string;
+  channels: ChannelInfo[];
+}
+
 // Вспомогательная функция для получения авторизованного пользователя
 async function getCurrentUserId(): Promise<string> {
   const pb = await createServerClient();
@@ -12,7 +23,10 @@ async function getCurrentUserId(): Promise<string> {
 }
 
 // Подписаться на канал
-export async function subscribeToChannel(channelUsername: string) {
+export async function subscribeToChannel(
+  channelUsername: string,
+  channelTitle?: string
+) {
   const userId = await getCurrentUserId();
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
@@ -21,11 +35,19 @@ export async function subscribeToChannel(channelUsername: string) {
     await pb.collection('subscriptions').create({
       userId,
       channelUsername: cleanUsername,
+      channelTitle: channelTitle || null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (
-      error.status === 400 &&
-      error.data?.data?.channelUsername?.code === 'unique'
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      (error as { status?: number }).status === 400 &&
+      (
+        error as {
+          data?: { data?: { channelUsername?: { code?: string } } };
+        }
+      ).data?.data?.channelUsername?.code === 'unique'
     ) {
       throw new Error('Вы уже подписаны на этот канал');
     }
@@ -57,14 +79,17 @@ export async function unsubscribeFromChannel(channelUsername: string) {
 }
 
 // Получить список подписок текущего пользователя
-export async function getUserSubscriptions(): Promise<string[]> {
+export async function getUserSubscriptions(): Promise<ChannelInfo[]> {
   const userId = await getCurrentUserId();
   const pb = await createServerClient();
   const records = await pb.collection('subscriptions').getFullList({
     filter: `userId = "${userId}"`,
-    sort: 'channelUsername',
+    sort: 'channelTitle',
   });
-  return records.map((r) => r.channelUsername);
+  return records.map((r) => ({
+    username: r.channelUsername,
+    title: r.channelTitle || r.channelUsername,
+  }));
 }
 
 // Создать группу
@@ -74,44 +99,67 @@ export async function createGroup(name: string) {
   const group = await pb.collection('groups').create({
     userId,
     name,
-    channels: [], // пустой массив по умолчанию
+    channels: [],
   });
   revalidatePath('/');
   return group;
 }
 
 // Получить группы пользователя с каналами
-export async function getUserGroups() {
+export async function getUserGroups(): Promise<GroupWithChannels[]> {
   const userId = await getCurrentUserId();
   const pb = await createServerClient();
   const records = await pb.collection('groups').getFullList({
     filter: `userId = "${userId}"`,
     sort: 'name',
   });
-  return records.map((r) => ({
-    id: r.id,
-    name: r.name,
-    channels: r.channels || [],
-  }));
+  return records.map((r) => {
+    const rawChannels = r.channels || [];
+    const channels: ChannelInfo[] = rawChannels.map(
+      (ch: string | ChannelInfo) => {
+        if (typeof ch === 'string') {
+          return { username: ch, title: ch };
+        }
+        return ch as ChannelInfo;
+      }
+    );
+    return {
+      id: r.id,
+      name: r.name,
+      channels,
+    };
+  });
 }
 
 // Добавить канал в группу
 export async function addChannelToGroup(
   groupId: string,
-  channelUsername: string
+  channelUsername: string,
+  channelTitle?: string
 ) {
   const userId = await getCurrentUserId();
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
-  // Проверим, что группа принадлежит пользователю
   const pb = await createServerClient();
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
 
-  // Добавляем канал в массив, если его там ещё нет
-  const channels = group.channels || [];
-  if (!channels.includes(cleanUsername)) {
-    channels.push(cleanUsername);
+  const rawChannels = group.channels || [];
+  const channels: ChannelInfo[] = rawChannels.map(
+    (ch: string | ChannelInfo) => {
+      if (typeof ch === 'string') {
+        return { username: ch, title: ch };
+      }
+      return ch as ChannelInfo;
+    }
+  );
+
+  const exists = channels.some((ch) => ch.username === cleanUsername);
+  if (!exists) {
+    channels.push({
+      username: cleanUsername,
+      title: channelTitle || cleanUsername,
+    });
     await pb.collection('groups').update(groupId, { channels });
   }
   revalidatePath('/');
@@ -129,9 +177,16 @@ export async function removeChannelFromGroup(
   const group = await pb.collection('groups').getOne(groupId);
   if (group.userId !== userId) throw new Error('Группа не найдена');
 
-  const channels = (group.channels || []).filter(
-    (ch: string) => ch !== cleanUsername
-  );
+  const rawChannels = group.channels || [];
+  const channels: ChannelInfo[] = rawChannels
+    .map((ch: string | ChannelInfo) => {
+      if (typeof ch === 'string') {
+        return { username: ch, title: ch };
+      }
+      return ch as ChannelInfo;
+    })
+    .filter((ch: ChannelInfo) => ch.username !== cleanUsername);
+
   await pb.collection('groups').update(groupId, { channels });
   revalidatePath('/');
 }

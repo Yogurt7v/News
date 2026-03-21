@@ -1,37 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
-import { Api } from 'telegram';
+import type { Chat } from '@mtcute/core';
+
+interface SearchResult {
+  id: string;
+  title: string;
+  username: string | null;
+  participantsCount: number;
+  type: 'channel' | 'group';
+  isPrivate: boolean;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') || '';
 
-  if (!q) return Response.json([]);
+  if (!q || q.length < 2) return Response.json([]);
 
   try {
     const client = await getTelegramClient();
 
-    // В стандартном API поиск выполняется через invoke
-    const result = await client.invoke(
-      new Api.contacts.Search({
-        q: q, // Поисковый запрос
-        limit: 20, // Лимит результатов
-      })
-    );
+    const chats: Chat[] = [];
+    for await (const dialog of client.iterDialogs({ limit: 300 })) {
+      if ('title' in dialog.peer) {
+        chats.push(dialog.peer as Chat);
+      }
+    }
 
-    // Результат содержит массив chats и users.
-    // Нам нужны chats, так как там лежат каналы и группы.
-    const searchResults = result.chats.map((chat: any) => ({
-      id: chat.id.toString(), // BigInt нужно превращать в строку для JSON
+    const query = q.toLowerCase();
+    const results = chats
+      .filter((chat) => chat.title.toLowerCase().includes(query))
+      .sort((a, b) => {
+        const aStarts = a.title.toLowerCase().startsWith(query);
+        const bStarts = b.title.toLowerCase().startsWith(query);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.title.localeCompare(b.title);
+      })
+      .slice(0, 50);
+
+    const searchResults: SearchResult[] = results.map((chat) => ({
+      id: chat.id.toString(),
       title: chat.title,
-      username: chat.username,
-      participantsCount: chat.participantsCount || 0,
-      isChannel: !!chat.broadcast, // broadcast === true означает канал
+      username: chat.username ?? null,
+      participantsCount: chat.membersCount ?? 0,
+      type: chat.chatType === 'channel' ? 'channel' : 'group',
+      isPrivate: !chat.username,
     }));
 
     return Response.json(searchResults);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Telegram Search Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message =
+      error instanceof Error ? error.message : 'Unknown error';
+    return Response.json({ error: message }, { status: 500 });
   }
 }

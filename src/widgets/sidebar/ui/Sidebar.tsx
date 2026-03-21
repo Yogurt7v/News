@@ -15,7 +15,27 @@ import {
   renameGroup,
 } from '@/features/subscriptions/actions.pb';
 
+interface ChannelInfo {
+  username: string;
+  title: string;
+}
+
+interface GroupWithChannels {
+  id: string;
+  name: string;
+  channels: ChannelInfo[];
+}
+
 // --- Универсальный UI компонент модалки ---
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  variant?: 'primary' | 'danger';
+}
+
 function ConfirmModal({
   isOpen,
   onClose,
@@ -23,7 +43,7 @@ function ConfirmModal({
   message,
   onConfirm,
   variant = 'primary',
-}: any) {
+}: ConfirmModalProps) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -62,9 +82,8 @@ function ConfirmModal({
 
 // --- ОСНОВНОЙ КОМПОНЕНТ SIDEBAR ---
 export function Sidebar() {
-  const [channels, setChannels] = useState<string[]>([]);
-  const [groups, setGroups] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [channels, setChannels] = useState<ChannelInfo[]>([]);
+  const [groups, setGroups] = useState<GroupWithChannels[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -120,8 +139,17 @@ export function Sidebar() {
     router.refresh();
   };
 
+  const confirmLogout = () => {
+    openConfirm(
+      'Выйти?',
+      'Вы уверены, что хотите выйти из аккаунта?',
+      handleLogout,
+      'danger'
+    );
+  };
+
   useEffect(() => {
-    refreshData().finally(() => setLoading(false));
+    refreshData();
   }, [refreshData]);
 
   // --- ЛОГИКА ---
@@ -146,14 +174,17 @@ export function Sidebar() {
     }
   };
 
-  const handleUnsubscribe = (e: React.MouseEvent, channel: string) => {
+  const handleUnsubscribe = (
+    e: React.MouseEvent,
+    channel: ChannelInfo
+  ) => {
     e.stopPropagation();
     openConfirm(
       'Отписаться?',
-      `Вы уверены, что хотите отписаться от @${channel}?`,
+      `Вы уверены, что хотите отписаться от "${channel.title}"?`,
       async () => {
-        await unsubscribeFromChannel(channel);
-        if (currentChannel === channel) router.push(pathname);
+        await unsubscribeFromChannel(channel.username);
+        if (currentChannel === channel.username) router.push(pathname);
         refreshData();
       },
       'danger'
@@ -163,14 +194,14 @@ export function Sidebar() {
   const handleRemoveFromGroup = (
     e: React.MouseEvent,
     groupId: string,
-    channel: string
+    channel: ChannelInfo
   ) => {
     e.stopPropagation();
     openConfirm(
       'Убрать из папки?',
-      `Убрать @${channel} из этой папки? (Подписка останется)`,
+      `Убрать "${channel.title}" из этой папки? (Подписка останется)`,
       async () => {
-        await removeChannelFromGroup(groupId, channel);
+        await removeChannelFromGroup(groupId, channel.username);
         refreshData();
       }
     );
@@ -178,11 +209,11 @@ export function Sidebar() {
 
   const createGroupWithChannels = async (
     name: string,
-    selectedChannels: string[]
+    selectedChannels: ChannelInfo[]
   ) => {
     const newGroup = await createGroup(name);
     for (const ch of selectedChannels) {
-      await addChannelToGroup(newGroup.id, ch);
+      await addChannelToGroup(newGroup.id, ch.username, ch.title);
     }
   };
 
@@ -311,12 +342,14 @@ export function Sidebar() {
 
             {/* Каналы внутри папки (аккордеон) */}
             {currentGroupId === group.id &&
-              group.channels?.map((ch: string) => (
+              group.channels?.map((ch: ChannelInfo) => (
                 <div
-                  key={ch}
+                  key={ch.username}
                   className="ml-9 mr-2 p-2 flex items-center justify-between text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg group/ch"
                 >
-                  <span className="truncate">@{ch}</span>
+                  <span className="truncate" title={ch.username}>
+                    {ch.title}
+                  </span>
                   <button
                     onClick={(e) => handleRemoveFromGroup(e, group.id, ch)}
                     className="opacity-0 group-ch/hover:opacity-100 text-[10px] hover:text-red-500 transition-opacity"
@@ -336,21 +369,28 @@ export function Sidebar() {
         </p>
         {channels.map((channel) => (
           <div
-            key={channel}
+            key={channel.username}
             onClick={() => {
               const p = new URLSearchParams();
-              p.set('channel', channel);
+              p.set('channel', channel.username);
               router.push(`${pathname}?${p.toString()}`);
               setMobileOpen(false);
             }}
-            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
+            className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${currentChannel === channel.username ? 'bg-[#229ED9] text-white shadow-md' : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2c]'}`}
           >
-            <span className="text-[14px] font-medium truncate">
-              @{channel}
-            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[14px] font-medium truncate">
+                {channel.title}
+              </span>
+              {/* {channel.username !== channel.title && (
+                <span className="text-[12px] text-gray-400 truncate shrink-0">
+                  @{channel.username}
+                </span>
+              )} */}
+            </div>
             <button
               onClick={(e) => handleUnsubscribe(e, channel)}
-              className={`opacity-0 group-hover:opacity-100 p-1 transition-opacity ${currentChannel === channel ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'}`}
+              className={`opacity-0 group-hover:opacity-100 p-1 transition-opacity ${currentChannel === channel.username ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'}`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -371,7 +411,7 @@ export function Sidebar() {
       </nav>
       <div className="p-4 border-t border-gray-200 dark:border-[#2a2a2c] ">
         <button
-          onClick={handleLogout}
+          onClick={confirmLogout}
           className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-[#343437] text-gray-700 dark:text-gray-300 rounded-xl px-4 py-2 text-sm font-medium transition"
         >
           <svg

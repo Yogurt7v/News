@@ -123,8 +123,11 @@ export const subscriptions = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     // onDelete: 'cascade' означает: если пользователь удалится, все его подписки тоже удалятся автоматически
 
-    // Колонка: имя канала (просто текст)
+    // Колонка: username канала
     channelUsername: text('channel_username').notNull(),
+
+    // Колонка: название канала (nullable для обратной совместимости)
+    channelTitle: text('channel_title'),
 
     // Колонка: дата и время подписки (по умолчанию — текущее время)
     createdAt: timestamp('created_at').defaultNow().notNull(),
