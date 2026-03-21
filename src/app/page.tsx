@@ -1,11 +1,9 @@
-import { db } from '@/db';
-import { desc, eq, inArray } from 'drizzle-orm';
-import { news, groups, groupChannels } from '@/db/schema';
-import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
-import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
+import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { NewsList } from '@/widgets/news-card/ui/NewsList';
+import createServerClient from '@/shared/lib/pocketbase.server';
+import { NoSubscriptions } from '@/widgets/sidebar/ui/NoSubscriptions';
+import { Wallpaper } from '@/widgets/wallpaper/ui/Wallpaper';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,77 +12,119 @@ interface PageProps {
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const pb = await createServerClient();
+  if (!pb.authStore.isValid) {
     redirect('/auth/signin');
   }
 
   const { channel, group } = await searchParams;
 
-  let newsItems = [];
+  let filter = '';
+  let hasSubscriptions = false;
+  let subscriptionCount = 0;
 
-  // Если выбран параметр group – фильтруем по группе
   if (group) {
-    // Проверяем, что группа принадлежит текущему пользователю
-    const userGroup = await db.query.groups.findFirst({
-      where: eq(groups.id, group),
-      with: {
-        channels: { columns: { channelUsername: true } },
-      },
-    });
-
-    if (userGroup && userGroup.userId === session.user.id) {
-      const usernames = userGroup.channels.map(
-        (c: { channelUsername: string }) => `@${c.channelUsername}`
-      );
-      if (usernames.length > 0) {
-        newsItems = await db.query.news.findMany({
-          where: inArray(news.source, usernames),
-          limit: 20,
-          orderBy: [desc(news.publishedAt)],
-          with: { media: true },
-        });
+    try {
+      const groupRecord = await pb.collection('groups').getOne(group);
+      if (groupRecord?.channels?.length) {
+        const channelList = groupRecord.channels.map(
+          (ch: string) => `@${ch}`
+        );
+        filter = channelList
+          .map((ch: string) => `source = "${ch}"`)
+          .join(' || ');
       } else {
-        // Группа пуста – новостей нет
-        newsItems = [];
+        filter = 'id = ""';
+      }
+    } catch (e) {
+      console.error('Ошибка получения группы:', e);
+      filter = 'id = ""';
+    }
+  } else if (channel) {
+    filter = `source = "@${channel.replace(/^@/, '')}"`;
+  } else {
+    const userId = pb.authStore.model?.id;
+    if (userId) {
+      const subscriptions = await pb
+        .collection('subscriptions')
+        .getFullList({
+          filter: `userId = "${userId}"`,
+        });
+      subscriptionCount = subscriptions.length;
+      if (subscriptions.length > 0) {
+        hasSubscriptions = true;
+        const channelList = subscriptions.map(
+          (s) =>
+            `@${(s as unknown as { channelUsername: string }).channelUsername}`
+        );
+        filter = channelList
+          .map((ch: string) => `source = "${ch}"`)
+          .join(' || ');
+      } else {
+        filter = 'id = ""';
       }
     } else {
-      // Группа не принадлежит пользователю – показываем все новости (или пусто)
-      newsItems = await db.query.news.findMany({
-        limit: 20,
-        orderBy: [desc(news.publishedAt)],
-        with: { media: true },
-      });
+      filter = 'id = ""';
     }
   }
-  // Если выбран параметр channel – фильтруем по одному каналу
-  else if (channel) {
-    const source = `@${channel.replace(/^@/, '')}`;
-    newsItems = await db.query.news.findMany({
-      where: eq(news.source, source),
-      limit: 20,
-      orderBy: [desc(news.publishedAt)],
-      with: { media: true },
-    });
-  }
-  // Без фильтра – все новости
-  else {
-    newsItems = await db.query.news.findMany({
-      limit: 20,
-      orderBy: [desc(news.publishedAt)],
-      with: { media: true },
-    });
-  }
+
+  const result = await pb.collection('news').getList(1, 20, {
+    filter: filter || undefined,
+    sort: '-publishedAt',
+    expand: 'media(newsId)',
+  });
+
+  const pageTitle = group
+    ? 'Новости группы'
+    : channel
+      ? `@${channel.replace('@', '')}`
+      : 'Мои подписки';
+
+  const statsText =
+    subscriptionCount > 0
+      ? `${subscriptionCount} канал${subscriptionCount === 1 ? '' : subscriptionCount < 5 ? 'а' : 'ов'} • ${result.totalItems} новостей`
+      : undefined;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-4 md:p-6">
-        <h1 className="text-2xl font-bold mb-6">
-          {group ? 'Новости группы' : channel ? `Новости канала @${channel}` : 'Все новости'}
-        </h1>
-        <NewsList initialNews={newsItems} />
-      </main>
-    </div>
+    <Wallpaper>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 min-w-0">
+          <div className="max-w-2xl mx-auto px-4 py-6">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 p-6 shadow-lg shadow-black/5">
+                <h1 className="text-2xl font-bold text-foreground">
+                  {pageTitle}
+                </h1>
+                {statsText && (
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                    {statsText}
+                  </p>
+                )}
+                {!hasSubscriptions && !channel && !group && (
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                    Добавьте каналы для начала чтения
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Content */}
+            {result.items.length > 0 ? (
+              <NewsList
+                initialNews={
+                  result.items as unknown as Parameters<
+                    typeof NewsList
+                  >[0]['initialNews']
+                }
+              />
+            ) : (
+              <NoSubscriptions hasSubscriptions={hasSubscriptions} />
+            )}
+          </div>
+        </main>
+      </div>
+    </Wallpaper>
   );
 }

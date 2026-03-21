@@ -1,6 +1,5 @@
 'use client';
 
-import { signIn, useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -8,20 +7,32 @@ import Link from 'next/link';
 function SignInContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { status } = useSession();
-
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   const [showCredentials, setShowCredentials] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<
+    null | 'google' | 'yandex' | 'github'
+  >(null);
 
-  // Редирект, если сессия уже активна
+  // Проверяем, не залогинен ли уже пользователь (по httpOnly cookie)
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.push(callbackUrl);
-    }
-  }, [status, router, callbackUrl]);
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const data = (await res.json()) as { authenticated?: boolean };
+        if (!alive) return;
+        if (data.authenticated) router.push(callbackUrl);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [router, callbackUrl]);
 
   const handleCredentialsSubmit = async (
     e: React.FormEvent<HTMLFormElement>
@@ -31,20 +42,38 @@ function SignInContent() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const res = await signIn('credentials', {
-      email: formData.get('email'),
-      password: formData.get('password'),
-      redirect: false,
-      callbackUrl,
-    });
+    const email = String(formData.get('email') || '');
+    const password = String(formData.get('password') || '');
 
-    setLoading(false);
-
-    if (res?.error) {
-      setError('Неверный email или пароль');
-    } else {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        setError('Неверный email или пароль');
+        return;
+      }
       router.push(callbackUrl);
       router.refresh();
+    } catch {
+      setError('Ошибка сети при входе');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startOAuth = async (provider: 'google' | 'yandex' | 'github') => {
+    setError('');
+    setOauthLoading(provider);
+    try {
+      window.location.href = `/api/auth/oauth/${provider}?callbackUrl=${encodeURIComponent(
+        callbackUrl
+      )}`;
+    } catch {
+      setError('Не удалось начать OAuth вход');
+      setOauthLoading(null);
     }
   };
 
@@ -128,8 +157,9 @@ function SignInContent() {
 
                 {/* Google */}
                 <button
-                  onClick={() => signIn('google', { callbackUrl })}
-                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98]"
+                  onClick={() => startOAuth('google')}
+                  disabled={oauthLoading !== null}
+                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98] disabled:opacity-60"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path
@@ -149,13 +179,18 @@ function SignInContent() {
                       fill="#EA4335"
                     />
                   </svg>
-                  <span>Google</span>
+                  <span>
+                    {oauthLoading === 'google'
+                      ? 'Перенаправляем…'
+                      : 'Google'}
+                  </span>
                 </button>
 
                 {/* Yandex */}
                 <button
-                  onClick={() => signIn('yandex', { callbackUrl })}
-                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98]"
+                  onClick={() => startOAuth('yandex')}
+                  disabled={oauthLoading !== null}
+                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98] disabled:opacity-60"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 256 512">
                     <path
@@ -163,13 +198,18 @@ function SignInContent() {
                       d="M153.1 315.8L65.7 512H2l96-209.8c-45.1-22.9-75.2-64.4-75.2-141.1C22.7 53.7 90.8 0 171.7 0H254v512h-55.1V315.8zm45.8-269.3h-29.4c-44.4 0-87.4 29.4-87.4 114.6c0 82.3 39.4 108.8 87.4 108.8h29.4z"
                     />
                   </svg>
-                  <span>Яндекс</span>
+                  <span>
+                    {oauthLoading === 'yandex'
+                      ? 'Перенаправляем…'
+                      : 'Яндекс'}
+                  </span>
                 </button>
 
                 {/* GitHub */}
-                <button
-                  onClick={() => signIn('github', { callbackUrl })}
-                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98]"
+                {/* <button
+                  onClick={() => startOAuth('github')}
+                  disabled={oauthLoading !== null}
+                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-white dark:bg-[#2a2a2c] px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#343437] transition active:scale-[0.98] disabled:opacity-60"
                 >
                   <svg
                     className="h-5 w-5"
@@ -182,8 +222,18 @@ function SignInContent() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>GitHub</span>
-                </button>
+                  <span>
+                    {oauthLoading === 'github'
+                      ? 'Перенаправляем…'
+                      : 'GitHub'}
+                  </span>
+                </button> */}
+
+                {error && (
+                  <div className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl animate-in shake-in duration-300">
+                    {error}
+                  </div>
+                )}
               </div>
             ) : (
               /* Форма логина */
@@ -241,9 +291,7 @@ function SignInContent() {
 
                   {/* Можно добавить ссылку "Забыли пароль?" для баланса, если нужно */}
                   <Link
-                    // href="/auth/forgot-password"
-                    href=""
-                    onClick={() => alert('ещё не добавлен функционал')}
+                    href="/auth/forgot-password"
                     className="text-[12px] font-medium text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
                   >
                     Забыли?

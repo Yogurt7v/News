@@ -2,16 +2,14 @@ import {
   subscribeToChannel,
   unsubscribeFromChannel,
   getUserSubscriptions,
-} from './actions';
+} from './actions.pb';
 import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 
-// Мокаем (подменяем) функцию getServerSession из next-auth
-// Теперь при вызове getServerSession в наших экшенах будет возвращаться тестовый пользователь
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(() =>
+jest.mock('@/shared/lib/pocketbase.server', () => ({
+  getServerPocketBase: jest.fn(() =>
     Promise.resolve({
-      user: { id: 'test-user-id' },
+      authStore: { isValid: true, record: { id: 'test-user-id' } },
     })
   ),
 }));

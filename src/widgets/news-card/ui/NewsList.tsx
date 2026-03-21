@@ -3,10 +3,20 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
-import { NewsWithMedia } from '@/entities/news/types';
 
 interface NewsListProps {
-  initialNews: NewsWithMedia[];
+  initialNews: Array<{
+    id: string;
+    title: string;
+    content: string;
+    source: string;
+    url: string;
+    imageUrl?: string;
+    publishedAt?: string;
+    expand?: Record<string, unknown>;
+    media?: Array<{ type: string; url: string }>;
+    [key: string]: unknown;
+  }>;
 }
 
 export function NewsList({ initialNews }: NewsListProps) {
@@ -18,7 +28,6 @@ export function NewsList({ initialNews }: NewsListProps) {
   const currentChannel = searchParams.get('channel');
   const currentGroup = searchParams.get('group');
 
-  // Обновляем список при изменении параметров (например, клик по группе/каналу)
   useEffect(() => {
     setNews(initialNews);
     setHasMore(initialNews.length === 20);
@@ -37,26 +46,64 @@ export function NewsList({ initialNews }: NewsListProps) {
       }
       const res = await fetch(`/api/news?${params.toString()}`);
       const newNews = await res.json();
-      setNews(prev => [...prev, ...newNews]);
+      setNews((prev) => [...prev, ...newNews]);
       setHasMore(newNews.length === 20);
     });
   };
 
   return (
-    <div className="space-y-6 max-w-175 mx-auto w-full py-4 px-2 sm:px-4">
-      <div className="grid grid-cols-1 w-150 gap-6">
-        {news.map((item) => (
-          <NewsCard key={item.id} news={item} />
-        ))}
-      </div>
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      {news.map((item, index) => (
+        <div
+          key={item.id}
+          className="animate-fade-in"
+          style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+        >
+          <NewsCard news={item} />
+        </div>
+      ))}
+
       {hasMore && (
         <button
           onClick={loadMore}
           disabled={isPending}
-          className="block mx-auto bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-6 rounded disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-sm font-semibold text-foreground hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isPending ? 'Загрузка...' : 'Загрузить ещё'}
+          {isPending ? (
+            <>
+              <svg
+                className="w-5 h-5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Загрузка...
+            </>
+          ) : (
+            'Загрузить ещё'
+          )}
         </button>
+      )}
+
+      {!hasMore && news.length > 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-black/30 dark:text-white/30">
+            Вы просмотрели все новости
+          </p>
+        </div>
       )}
     </div>
   );

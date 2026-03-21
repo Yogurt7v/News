@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { db } from '@/db';
 import { news, groups, groupChannels } from '@/db/schema';
 import { desc, eq, inArray, and } from 'drizzle-orm';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 export async function GET(request: NextRequest) {
   // 1. Проверяем авторизацию (главная страница доступна только залогиненным)
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const pb = await getServerPocketBase();
+  const userId = pb.authStore.record?.id;
+  if (!pb.authStore.isValid || !userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const userGroup = await db.query.groups.findFirst({
       where: and(
         eq(groups.id, groupId),
-        eq(groups.userId, session.user.id)
+        eq(groups.userId, userId)
       ),
     });
     if (!userGroup) {

@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '../api/auth/[...nextauth]/route';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 export default async function BookmarksPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect('/auth/signin');
+  const pb = await getServerPocketBase();
+  if (!pb.authStore.isValid) redirect('/auth/signin');
   return <div>Здесь будут закладки</div>;
 }

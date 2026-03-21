@@ -3,10 +3,15 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
+interface ChannelInfo {
+  username: string;
+  title: string;
+}
+
 interface CreateGroupModalProps {
-  allChannels: string[];
+  allChannels: ChannelInfo[];
   onClose: () => void;
-  onSubmit: (name: string, selected: string[]) => Promise<void>;
+  onSubmit: (name: string, selected: ChannelInfo[]) => Promise<void>;
 }
 
 export function CreateGroupModal({
@@ -15,12 +20,14 @@ export function CreateGroupModal({
   onSubmit,
 }: CreateGroupModalProps) {
   const [name, setName] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<ChannelInfo[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const toggleChannel = (ch: string) => {
+  const toggleChannel = (ch: ChannelInfo) => {
     setSelected((prev) =>
-      prev.includes(ch) ? prev.filter((i) => i !== ch) : [...prev, ch]
+      prev.some((c) => c.username === ch.username)
+        ? prev.filter((c) => c.username !== ch.username)
+        : [...prev, ch]
     );
   };
 
@@ -75,9 +82,9 @@ export function CreateGroupModal({
           </p>
           {allChannels.map((ch) => (
             <label
-              key={ch}
+              key={ch.username}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-colors ${
-                selected.includes(ch)
+                selected.some((c) => c.username === ch.username)
                   ? 'bg-[#229ED9]/10 dark:bg-[#229ED9]/20 border border-[#229ED9]/40'
                   : 'hover:bg-gray-50 dark:hover:bg-white/5'
               }`}
@@ -85,15 +92,15 @@ export function CreateGroupModal({
               <input
                 type="checkbox"
                 className="w-4 h-4 rounded border-gray-300 text-[#229ED9] focus:ring-[#229ED9]"
-                checked={selected.includes(ch)}
+                checked={selected.some((c) => c.username === ch.username)}
                 onChange={() => toggleChannel(ch)}
               />
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-sm text-gray-900 dark:text-gray-50 truncate">
-                  @{ch}
+                  {ch.title}
                 </span>
-                <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                  Канал
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+                  @{ch.username}
                 </span>
               </div>
             </label>
