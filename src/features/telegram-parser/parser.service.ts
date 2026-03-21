@@ -1,43 +1,39 @@
 'use server';
 
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
-import createServerClient from '@/shared/lib/pocketbase.server';
 import { TelegramClient } from '@mtcute/node';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { File } from 'node:buffer';
 import type Client from 'pocketbase';
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
+
+export interface TelegramPostMedia {
+  type: 'photo' | 'video' | 'document';
+  fileId: string;
+  tempPath: string;
+  mimeType: string;
+  fileName: string;
+  width: number;
+  height: number;
+}
 
 export interface TelegramPost {
   id: number;
   date: Date;
-  media?: TelegramPostMedia[];
+  media: TelegramPostMedia[];
   message: string;
   peerId: string;
-  channelUsername?: string;
-  channelTitle?: string;
-}
-
-export interface TelegramPostMedia {
-  type: 'photo' | 'video' | 'document' | 'web_page';
-  url?: string;
-  fileId: string;
-  tempPath: string;
-  mimeType?: string;
-  fileName?: string;
-  width?: number;
-  height?: number;
+  channelUsername: string;
+  channelTitle: string;
 }
 
 export class TelegramParserService {
   private pbInstance: Client | null = null;
 
-  // Метод для безопасного получения инициализированного клиента
   private async getPb(): Promise<Client> {
-    if (!this.pbInstance) {
-      this.pbInstance = await createAdminClient();
-    }
+    if (!this.pbInstance) this.pbInstance = await createAdminClient();
     return this.pbInstance;
   }
 
@@ -46,135 +42,108 @@ export class TelegramParserService {
     channelUsername: string,
     limit: number = 10
   ): Promise<TelegramPost[]> {
-    console.log(
-      `📡 [getChannelPosts] Запрашиваю историю @${channelUsername}`
-    );
-    const messages = await client.getHistory(channelUsername, { limit });
+    const username = channelUsername.replace('@', '');
+    console.log(`\n🔍 [${username}] Запрашиваю историю сообщений...`);
+
+    // Берем с запасом, чтобы собрать полные альбомы
+    const messages = await client.getHistory(username, {
+      limit: limit * 2,
+    });
 
     const groupedMessages = new Map<string, any[]>();
     for (const msg of messages) {
       const groupId = msg.groupedId
         ? `group_${msg.groupedId.toString()}`
         : `single_${msg.id}`;
-      if (!groupedMessages.has(groupId)) {
-        groupedMessages.set(groupId, []);
-      }
+      if (!groupedMessages.has(groupId)) groupedMessages.set(groupId, []);
       groupedMessages.get(groupId)!.push(msg);
     }
 
     const posts: TelegramPost[] = [];
+    console.log(
+      `📦 [${username}] Найдено групп/постов: ${groupedMessages.size}`
+    );
 
-    for (const [groupId, msgs] of groupedMessages) {
+    for (const [_, msgs] of groupedMessages) {
       msgs.sort((a, b) => a.id - b.id);
       const mainMsg = msgs[0];
       const fullText = msgs
         .map((m) => m.text || '')
         .filter(Boolean)
-        .join('\n');
+        .join('\n')
+        .trim();
+      const allMedia: TelegramPostMedia[] = [];
 
-      if (!fullText && !msgs.some((m) => m.media)) continue;
-
-      const allExtractedMedia: TelegramPostMedia[] = [];
-      for (const msg of msgs) {
-        if (msg.media) {
-          const mediaItem = await this.extractAllMedia(msg.media, client);
-          allExtractedMedia.push(...mediaItem);
+      if (msgs.some((m) => m.media)) {
+        console.log(`➡️  Обработка медиа для поста ID: ${mainMsg.id}...`);
+        for (const msg of msgs) {
+          if (msg.media) {
+            const extracted = await this.extractMedia(msg.media, client);
+            if (extracted) allMedia.push(extracted);
+          }
         }
       }
+
+      if (!fullText && allMedia.length === 0) continue;
 
       posts.push({
         id: mainMsg.id,
         date: mainMsg.date,
         message: fullText,
         peerId: mainMsg.chat.id.toString(),
-        channelUsername: channelUsername.replace('@', ''),
-        channelTitle: mainMsg.chat?.title,
-        media: allExtractedMedia,
+        channelUsername: username,
+        channelTitle: mainMsg.chat?.title || username,
+        media: allMedia,
       });
     }
 
-    return posts;
+    return posts.slice(0, limit);
   }
 
-  async getMultipleChannelsPosts(
-    channels: string[],
-    limitPerChannel: number = 5
-  ): Promise<TelegramPost[]> {
-    const client = await getTelegramClient();
-    const allPosts: TelegramPost[] = [];
-
-    for (const channel of channels) {
-      try {
-        const posts = await this.getChannelPosts(
-          client,
-          channel,
-          limitPerChannel
-        );
-        allPosts.push(...posts);
-      } catch (error) {
-        console.error(`Ошибка канала @${channel}:`, error);
-      }
-    }
-    return allPosts;
-  }
-
-  private async extractAllMedia(
+  private async extractMedia(
     m: any,
     client: TelegramClient
-  ): Promise<TelegramPostMedia[]> {
-    const result: TelegramPostMedia[] = [];
-    const mediaType =
-      typeof m.type === 'string'
-        ? m.type
-        : m.constructor.name.toLowerCase();
-
+  ): Promise<TelegramPostMedia | null> {
     let type: TelegramPostMedia['type'] | null = null;
-    if (mediaType.includes('photo')) type = 'photo';
-    else if (mediaType.includes('video')) type = 'video';
-    else if (mediaType.includes('document')) type = 'document';
+    const mime = m.mimeType || '';
 
-    if (type && m.fileId) {
-      try {
-        const extension = type === 'video' ? 'mp4' : 'jpg';
-        const fileName = `${m.fileId}.${extension}`;
-        const tmpPath = path.join(os.tmpdir(), fileName);
+    if (m.type === 'photo') type = 'photo';
+    else if (
+      m.type === 'video' ||
+      m.type === 'animation' ||
+      mime.includes('video')
+    )
+      type = 'video';
+    else if (m.type === 'document') type = 'document';
 
-        await client.downloadToFile(tmpPath, m);
+    if (!type) return null;
 
-        result.push({
-          type,
-          fileId: m.fileId,
-          tempPath: tmpPath,
-          mimeType: m.mimeType,
-          fileName: fileName,
-          width: m.width,
-          height: m.height,
-        });
-      } catch (e) {
-        console.error(`❌ Ошибка скачивания файла ${m.fileId}:`, e);
-      }
+    try {
+      const ext =
+        type === 'video' ? 'mp4' : type === 'photo' ? 'jpg' : 'bin';
+      const fileName = `${m.fileId}.${ext}`;
+      const tmpPath = path.join(os.tmpdir(), fileName);
+
+      const sizeMb = m.size ? (m.size / (1024 * 1024)).toFixed(2) : '??';
+      process.stdout.write(`   ⏳ Скачиваю ${type} (${sizeMb} MB)... `);
+
+      await client.downloadToFile(tmpPath, m);
+
+      process.stdout.write(`✅\n`); // Завершаем строку лога после скачивания
+
+      return {
+        type,
+        fileId: m.fileId,
+        tempPath: tmpPath,
+        mimeType: mime || (type === 'video' ? 'video/mp4' : 'image/jpeg'),
+        fileName,
+        width: m.width || 0,
+        height: m.height || 0,
+      };
+    } catch (e) {
+      console.error(`\n❌ Ошибка скачивания ${m.fileId}:`, e);
+      return null;
     }
-    return result;
-  }
-
-  private extractTitle(message: string): string | null {
-    if (!message) return null;
-    const firstLine = message.split('\n')[0].trim();
-    return firstLine.length > 100
-      ? firstLine.slice(0, 97) + '...'
-      : firstLine;
-  }
-
-  mapToNews(post: TelegramPost) {
-    return {
-      title: this.extractTitle(post.message) || 'Новость из Telegram',
-      content: post.message,
-      source: `@${post.channelUsername}`,
-      url: `https://t.me/${post.channelUsername}/${post.id}`,
-      publishedAt: post.date.toISOString(),
-      channelUsername: post.channelUsername,
-      channelTitle: post.channelTitle || '',
-    };
   }
 
   async saveNews(post: TelegramPost): Promise<boolean> {
@@ -186,78 +155,145 @@ export class TelegramParserService {
         .collection('news')
         .getFirstListItem(`url = "${newsUrl}"`)
         .catch(() => null);
-
       if (existing) {
-        if (post.media) {
-          await Promise.all(
-            post.media.map((m) => fs.unlink(m.tempPath).catch(() => {}))
-          );
-        }
+        for (const m of post.media)
+          await fs.unlink(m.tempPath).catch(() => {});
         return false;
       }
 
-      const newsData = this.mapToNews(post);
-      const newNews = await pb.collection('news').create(newsData);
+      const newsRecord = await pb.collection('news').create({
+        title:
+          post.message.split('\n')[0].slice(0, 120) || 'Новость из TG',
+        content: post.message,
+        source: `@${post.channelUsername}`,
+        url: newsUrl,
+        publishedAt: post.date.toISOString(),
+      });
 
-      if (post.media && post.media.length > 0) {
-        const mediaPromises = post.media.map(async (m, i) => {
-          try {
-            const fileBuffer = await fs.readFile(m.tempPath);
-            const fileName =
-              m.fileName ||
-              `file${i}.${m.type === 'video' ? 'mp4' : 'jpg'}`;
+      if (post.media.length > 0) {
+        console.log(
+          `   🚀 Загрузка в PocketBase: ${post.media.length} файлов...`
+        );
+        for (let i = 0; i < post.media.length; i++) {
+          const m = post.media[i];
+          const buffer = await fs.readFile(m.tempPath);
+          const formData = new FormData();
 
-            const data = new FormData();
-            data.append('newsId', newNews.id);
-            data.append('type', m.type);
-            data.append('order', i.toString());
-            data.append('mimeType', m.mimeType || '');
-            data.append('width', (m.width || 0).toString());
-            data.append('height', (m.height || 0).toString());
+          formData.append('newsId', newsRecord.id);
+          formData.append('type', m.type);
+          formData.append('order', i.toString());
+          formData.append('width', m.width.toString());
+          formData.append('height', m.height.toString());
 
-            // Используем Blob для совместимости с FormData в серверном окружении
-            const fileBlob = new Blob([fileBuffer], { type: m.mimeType });
-            data.append('file', fileBlob, fileName);
+          const fileObj = new File([buffer], m.fileName, {
+            type: m.mimeType,
+          });
+          formData.append('file', fileObj);
 
-            await pb.collection('media').create(data, {
-              requestKey: null, // ЭТО ОТКЛЮЧИТ АВТО-ОТМЕНУ
-            });
-            await fs.unlink(m.tempPath).catch(() => {});
-          } catch (err) {
-            console.error(
-              `❌ Ошибка медиа для новости ${newNews.id}:`,
-              err
-            );
-          }
-        });
-
-        await Promise.all(mediaPromises);
+          await pb
+            .collection('media')
+            .create(formData, { requestKey: null });
+          await fs.unlink(m.tempPath).catch(() => {});
+          process.stdout.write(
+            `      [${i + 1}/${post.media.length}] Файл загружен и удален из tmp\n`
+          );
+        }
       }
       return true;
     } catch (err) {
-      console.error(`❌ Ошибка сохранения новости ${newsUrl}:`, err);
+      console.error(`❌ Ошибка сохранения поста ${newsUrl}:`, err);
       return false;
     }
   }
 
-  async saveAllNews(posts: TelegramPost[]): Promise<number> {
-    let savedCount = 0;
-    for (const post of posts) {
-      if (await this.saveNews(post)) savedCount++;
-    }
-    return savedCount;
-  }
-
   async fetchAndSaveNews(
     channels: string[],
-    limitPerChannel: number = 5
+    limit: number = 5
   ): Promise<number> {
-    const posts = await this.getMultipleChannelsPosts(
-      channels,
-      limitPerChannel
-    );
-    return this.saveAllNews(posts);
+    const client = await getTelegramClient();
+    let totalSaved = 0;
+
+    for (const channel of channels) {
+      try {
+        const posts = await this.getChannelPosts(client, channel, limit);
+        for (const post of posts) {
+          if (await this.saveNews(post)) {
+            totalSaved++;
+            console.log(`✨ Пост сохранен! (Всего: ${totalSaved})`);
+          }
+        }
+      } catch (e) {
+        console.error(`🔴 Ошибка на канале ${channel}:`, e);
+      }
+    }
+    return totalSaved;
+  }
+
+  /**
+   * Удаляет новости старше указанного количества дней
+   * @param days количество дней, которые храним
+   */
+  async deleteOldNews(days: number = 3): Promise<number> {
+    const pb = await this.getPb();
+
+    // Вычисляем дату, которая была 'days' назад
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() - days);
+
+    // Форматируем дату для запроса PocketBase (YYYY-MM-DD HH:mm:ss)
+    const dateStr = expirationDate
+      .toISOString()
+      .replace('T', ' ')
+      .split('.')[0];
+
+    console.log(`🧹 [Cleanup] Поиск новостей старше чем: ${dateStr}`);
+
+    try {
+      // 1. Находим все старые новости
+      const oldRecords = await pb.collection('news').getFullList({
+        filter: `publishedAt < "${dateStr}"`,
+        fields: 'id',
+      });
+
+      if (oldRecords.length === 0) {
+        console.log('✅ Старых новостей не найдено.');
+        return 0;
+      }
+
+      console.log(
+        `🗑️  Найдено старых записей: ${oldRecords.length}. Начинаю удаление...`
+      );
+
+      let deletedCount = 0;
+      for (const record of oldRecords) {
+        try {
+          await pb.collection('news').delete(record.id);
+          deletedCount++;
+        } catch (err) {
+          console.error(`❌ Ошибка удаления записи ${record.id}:`, err);
+        }
+      }
+
+      console.log(`✨ Очистка завершена. Удалено постов: ${deletedCount}`);
+      return deletedCount;
+    } catch (err) {
+      console.error('❌ Ошибка при выполнении очистки:', err);
+      return 0;
+    }
   }
 }
 
-export const telegramParser = new TelegramParserService();
+export async function runTelegramParser(
+  channels: string[],
+  limit: number = 10
+) {
+  const service = new TelegramParserService();
+  console.log('🧹 Запуск очистки старых данных...');
+  const deletedCount = await service.deleteOldNews(3);
+  if (deletedCount > 0) {
+    console.log(`♻️  Очищено постов: ${deletedCount}`);
+  } else {
+    console.log(`✅ База уже чиста, старых постов нет.`);
+  }
+  return await service.fetchAndSaveNews(channels, limit);
+}
