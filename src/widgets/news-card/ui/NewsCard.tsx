@@ -3,29 +3,55 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
-import { formatDate } from '@/shared/lib/date';
 import { pb } from '@/shared/lib/pocketbase';
 
 interface NewsCardProps {
-  news: any;
+  news: {
+    id: string;
+    title: string;
+    content: string;
+    source: string;
+    url: string;
+    imageUrl?: string;
+    publishedAt?: string;
+    expand?: Record<string, unknown>;
+    media?: Array<{ type: string; url: string }>;
+    [key: string]: unknown;
+  };
 }
+
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 1) return 'только что';
+  if (minutes < 60) return `${minutes} мин`;
+  if (hours < 24) return `${hours} ч`;
+  if (days < 7) return `${days} д`;
+  return date.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+};
 
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Извлекаем медиа из PocketBase (ключ 'media(newsId)')
-  const expandedMedia = news.expand?.['media(newsId)'];
+  const expandedMedia = news.expand?.['media(newsId)'] as
+    | Array<{
+        type: string;
+        file: string;
+      }>
+    | undefined;
 
   let mediaItems: { type: string; url: string }[] = [];
 
   if (Array.isArray(expandedMedia)) {
-    mediaItems = expandedMedia.map((m: any) => ({
+    mediaItems = expandedMedia.map((m) => ({
       type: m.type,
-      // В PocketBase SDK метод называется getURL (все заглавные)
       url: pb.files.getURL(m, m.file),
     }));
   } else if (news.media && Array.isArray(news.media)) {
-    // Поддержка старого формата
     mediaItems = news.media;
   }
 
@@ -33,37 +59,56 @@ export function NewsCard({ news }: NewsCardProps) {
   const publishedDate = news.publishedAt
     ? new Date(news.publishedAt)
     : null;
+  const timeAgo = publishedDate ? formatTimeAgo(publishedDate) : '';
 
   return (
     <>
-      <article className="flex flex-col max-w-full animate-in fade-in slide-in-from-bottom-3 duration-300">
-        <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm border border-gray-100 dark:border-[#2a2a2c] overflow-hidden">
-          {/* Шапка поста */}
-          <div className="px-4 py-2 flex items-center justify-between border-b border-gray-50 dark:border-[#2a2a2c]">
-            <span className="text-[#229ED9] font-bold text-sm">
-              {news.source}
-            </span>
+      <article className="animate-fade-in">
+        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 shadow-lg shadow-black/5 overflow-hidden">
+          {/* Header */}
+          <div className="px-5 py-3 flex items-center justify-between bg-white/40 dark:bg-white/5 backdrop-blur-sm border-b border-black/5 dark:border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#229ED9]/10 flex items-center justify-center">
+                <svg
+                  className="w-3.5 h-3.5 text-[#229ED9]"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                  <path d="M9 9l6 3-6 3V9z" />
+                </svg>
+              </div>
+              <span className="text-sm font-semibold text-[#229ED9]">
+                @{news.source.replace('@', '')}
+              </span>
+            </div>
+            {timeAgo && (
+              <span className="text-xs font-medium text-black/40 dark:text-white/40 px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
+                {timeAgo}
+              </span>
+            )}
           </div>
 
-          {/* Медиа-блок */}
+          {/* Media */}
           {mainMedia && (
             <div
-              className="relative aspect-video w-full overflow-hidden cursor-zoom-in bg-gray-200 dark:bg-[#121214] flex items-center justify-center"
+              className="relative w-full aspect-video overflow-hidden cursor-pointer group"
               onClick={() => setIsModalOpen(true)}
             >
               {mainMedia.type === 'video' ? (
                 <div className="relative w-full h-full">
                   <video
                     src={mainMedia.url}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                     muted
                     playsInline
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                    <div className="bg-white/20 backdrop-blur-md p-3 rounded-full">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                    <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                       <svg
+                        className="w-7 h-7 text-[#229ED9] ml-1"
                         viewBox="0 0 24 24"
-                        className="w-8 h-8 fill-white"
+                        fill="currentColor"
                       >
                         <path d="M8 5v14l11-7z" />
                       </svg>
@@ -75,67 +120,80 @@ export function NewsCard({ news }: NewsCardProps) {
                   src={mainMedia.url}
                   alt={news.title || 'Изображение новости'}
                   fill
-                  // КРИТИЧНО: unoptimized позволяет загружать картинки с 127.0.0.1
-                  unoptimized
                   className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 700px"
-                  priority={false}
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 672px"
                 />
               )}
 
               {mediaItems.length > 1 && (
-                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold">
+                <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-semibold">
                   1 / {mediaItems.length}
                 </div>
               )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
 
-          {/* Текст */}
-          <div className="p-4 relative">
-            <h2 className="text-[17px] font-bold mb-1.5 text-gray-900 dark:text-white leading-tight">
+          {/* Content */}
+          <div className="p-5 space-y-3">
+            <h2 className="text-[17px] font-bold leading-tight text-foreground">
               {news.title}
             </h2>
-            <p className="text-[15px] text-gray-800 dark:text-[#f5f5f5] leading-normal whitespace-pre-wrap">
-              {news.content}
-            </p>
 
-            <div className="mt-2 flex items-center justify-end gap-1">
-              <time className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">
-                {publishedDate ? formatDate(publishedDate) : ''}
-              </time>
-              <svg
-                viewBox="0 0 24 24"
-                className="w-4 h-4 text-[#229ED9]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
+            {news.content && (
+              <p className="text-[15px] leading-relaxed text-black/60 dark:text-white/60 line-clamp-3">
+                {news.content}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-3">
+              <button
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-sm font-semibold text-foreground hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-[0.98]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Анализ', news.id);
+                }}
               >
-                <path
-                  d="M4 12l4.5 4.5L19 7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Анализ
+              </button>
+              <a
+                href={news.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-foreground hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-[0.98]"
+              >
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
             </div>
-          </div>
-
-          {/* Кнопка действия */}
-          <div className="p-2 pt-0">
-            <button
-              className="w-full bg-blue-50 dark:bg-[#229ED9]/10 hover:bg-blue-100 dark:hover:bg-[#229ED9]/20 text-[#229ED9] text-[14px] font-bold py-2.5 rounded-xl transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Анализ', news.id);
-              }}
-            >
-              🤖 Анализировать новость
-            </button>
           </div>
         </div>
       </article>
 
-      {/* Модалка */}
       {isModalOpen && mainMedia && (
         <MediaModal
           media={mediaItems}

@@ -19,9 +19,9 @@ export default async function HomePage({ searchParams }: PageProps) {
   const { channel, group } = await searchParams;
 
   let filter = '';
-  let hasSubscriptions = false; // флаг для инструкции
+  let hasSubscriptions = false;
+  let subscriptionCount = 0;
 
-  // Если выбрана группа
   if (group) {
     try {
       const groupRecord = await pb.collection('groups').getOne(group);
@@ -39,31 +39,27 @@ export default async function HomePage({ searchParams }: PageProps) {
       console.error('Ошибка получения группы:', e);
       filter = 'id = ""';
     }
-  }
-  // Если выбран конкретный канал
-  else if (channel) {
+  } else if (channel) {
     filter = `source = "@${channel.replace(/^@/, '')}"`;
-  }
-  // Без параметров – показываем новости из подписок пользователя
-  else {
+  } else {
     const userId = pb.authStore.model?.id;
     if (userId) {
-      // Получаем все подписки пользователя
       const subscriptions = await pb
         .collection('subscriptions')
         .getFullList({
           filter: `userId = "${userId}"`,
         });
+      subscriptionCount = subscriptions.length;
       if (subscriptions.length > 0) {
         hasSubscriptions = true;
         const channelList = subscriptions.map(
-          (s: any) => `@${s.channelUsername}`
+          (s) =>
+            `@${(s as unknown as { channelUsername: string }).channelUsername}`
         );
         filter = channelList
           .map((ch: string) => `source = "${ch}"`)
           .join(' || ');
       } else {
-        // Нет подписок – показываем пустой список
         filter = 'id = ""';
       }
     } else {
@@ -71,29 +67,60 @@ export default async function HomePage({ searchParams }: PageProps) {
     }
   }
 
-  // Запрос к PocketBase
   const result = await pb.collection('news').getList(1, 20, {
     filter: filter || undefined,
     sort: '-publishedAt',
     expand: 'media(newsId)',
   });
 
+  const pageTitle = group
+    ? 'Новости группы'
+    : channel
+      ? `@${channel.replace('@', '')}`
+      : 'Мои подписки';
+
+  const statsText =
+    subscriptionCount > 0
+      ? `${subscriptionCount} канал${subscriptionCount === 1 ? '' : subscriptionCount < 5 ? 'а' : 'ов'} • ${result.totalItems} новостей`
+      : undefined;
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-4 md:p-6">
-        <h1 className="text-2xl font-bold mb-6">
-          {group
-            ? 'Новости группы'
-            : channel
-              ? `Новости канала @${channel}`
-              : 'Мои подписки'}
-        </h1>
-        {result.items.length > 0 ? (
-          <NewsList initialNews={result.items} />
-        ) : (
-          <NoSubscriptions hasSubscriptions={hasSubscriptions} />
-        )}
+      <main className="flex-1 min-w-0">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 p-6 shadow-lg shadow-black/5">
+              <h1 className="text-2xl font-bold text-foreground">
+                {pageTitle}
+              </h1>
+              {statsText && (
+                <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                  {statsText}
+                </p>
+              )}
+              {!hasSubscriptions && !channel && !group && (
+                <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                  Добавьте каналы для начала чтения
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Content */}
+          {result.items.length > 0 ? (
+            <NewsList
+              initialNews={
+                result.items as unknown as Parameters<
+                  typeof NewsList
+                >[0]['initialNews']
+              }
+            />
+          ) : (
+            <NoSubscriptions hasSubscriptions={hasSubscriptions} />
+          )}
+        </div>
       </main>
     </div>
   );

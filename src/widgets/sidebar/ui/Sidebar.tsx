@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
@@ -105,6 +105,24 @@ export function Sidebar() {
     variant: 'primary',
     onClose: () => setConfirmData((prev) => ({ ...prev, isOpen: false })),
   });
+
+  const [isScrollingDown, setIsScrollingDown] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrollingDown(
+        currentScrollY > lastScrollY.current && currentScrollY > 50
+      );
+      setIsAtTop(currentScrollY < 20);
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const closeConfirm = () =>
     setConfirmData((prev) => ({ ...prev, isOpen: false }));
@@ -232,7 +250,9 @@ export function Sidebar() {
               <span className="text-xl font-bold">N</span>
             </div>
             <div>
-              <h2 className="font-bold text-lg tracking-tight">Новости</h2>
+              <h2 className="font-bold text-lg tracking-tight">
+                Будь в курсе
+              </h2>
               <p className="text-xs text-black/40 dark:text-white/40">
                 Ваша лента
               </p>
@@ -538,7 +558,11 @@ export function Sidebar() {
 
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 right-6 z-[100] w-14 h-14 bg-[#229ED9] text-white rounded-2xl shadow-lg shadow-[#229ED9]/40 flex items-center justify-center active:scale-90 transition-transform"
+        className={`md:hidden fixed z-[100] w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-all duration-300 ${
+          isScrollingDown
+            ? 'top-4 right-4 bg-white/20 backdrop-blur-md text-white/60 border border-white/20'
+            : 'top-12 right-6 bg-[#229ED9] text-white shadow-[#229ED9]/40'
+        }`}
       >
         <svg
           className="w-6 h-6"
