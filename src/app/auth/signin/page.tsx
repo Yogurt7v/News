@@ -291,12 +291,7 @@ function SignInContent() {
 
                   {/* Можно добавить ссылку "Забыли пароль?" для баланса, если нужно */}
                   <Link
-                    // href="/auth/forgot-password"
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert('ещё не добавлен функционал');
-                    }}
+                    href="/auth/forgot-password"
                     className="text-[12px] font-medium text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
                   >
                     Забыли?
