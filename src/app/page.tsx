@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { NewsList } from '@/widgets/news-card/ui/NewsList';
 import createServerClient from '@/shared/lib/pocketbase.server';
+import { NoSubscriptions } from '@/widgets/sidebar/ui/NoSubscriptions';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,6 @@ interface PageProps {
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  // Проверка авторизации
   const pb = await createServerClient();
   if (!pb.authStore.isValid) {
     redirect('/auth/signin');
@@ -18,8 +18,10 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   const { channel, group } = await searchParams;
 
-  // Формируем фильтр для PocketBase
   let filter = '';
+  let hasSubscriptions = false; // флаг для инструкции
+
+  // Если выбрана группа
   if (group) {
     try {
       const groupRecord = await pb.collection('groups').getOne(group);
@@ -35,6 +37,36 @@ export default async function HomePage({ searchParams }: PageProps) {
       }
     } catch (e) {
       console.error('Ошибка получения группы:', e);
+      filter = 'id = ""';
+    }
+  }
+  // Если выбран конкретный канал
+  else if (channel) {
+    filter = `source = "@${channel.replace(/^@/, '')}"`;
+  }
+  // Без параметров – показываем новости из подписок пользователя
+  else {
+    const userId = pb.authStore.model?.id;
+    if (userId) {
+      // Получаем все подписки пользователя
+      const subscriptions = await pb
+        .collection('subscriptions')
+        .getFullList({
+          filter: `userId = "${userId}"`,
+        });
+      if (subscriptions.length > 0) {
+        hasSubscriptions = true;
+        const channelList = subscriptions.map(
+          (s: any) => `@${s.channelUsername}`
+        );
+        filter = channelList
+          .map((ch: string) => `source = "${ch}"`)
+          .join(' || ');
+      } else {
+        // Нет подписок – показываем пустой список
+        filter = 'id = ""';
+      }
+    } else {
       filter = 'id = ""';
     }
   }
@@ -55,9 +87,13 @@ export default async function HomePage({ searchParams }: PageProps) {
             ? 'Новости группы'
             : channel
               ? `Новости канала @${channel}`
-              : 'Все новости'}
+              : 'Мои подписки'}
         </h1>
-        <NewsList initialNews={result.items} />
+        {result.items.length > 0 ? (
+          <NewsList initialNews={result.items} />
+        ) : (
+          <NoSubscriptions hasSubscriptions={hasSubscriptions} />
+        )}
       </main>
     </div>
   );
