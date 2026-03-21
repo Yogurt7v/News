@@ -3,6 +3,7 @@ import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { NewsList } from '@/widgets/news-card/ui/NewsList';
 import createServerClient from '@/shared/lib/pocketbase.server';
 import { NoSubscriptions } from '@/widgets/sidebar/ui/NoSubscriptions';
+import { Wallpaper } from '@/widgets/wallpaper/ui/Wallpaper';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,43 +86,45 @@ export default async function HomePage({ searchParams }: PageProps) {
       : undefined;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 min-w-0">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 p-6 shadow-lg shadow-black/5">
-              <h1 className="text-2xl font-bold text-foreground">
-                {pageTitle}
-              </h1>
-              {statsText && (
-                <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                  {statsText}
-                </p>
-              )}
-              {!hasSubscriptions && !channel && !group && (
-                <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                  Добавьте каналы для начала чтения
-                </p>
-              )}
+    <Wallpaper>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 min-w-0">
+          <div className="max-w-2xl mx-auto px-4 py-6">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 p-6 shadow-lg shadow-black/5">
+                <h1 className="text-2xl font-bold text-foreground">
+                  {pageTitle}
+                </h1>
+                {statsText && (
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                    {statsText}
+                  </p>
+                )}
+                {!hasSubscriptions && !channel && !group && (
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                    Добавьте каналы для начала чтения
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Content */}
-          {result.items.length > 0 ? (
-            <NewsList
-              initialNews={
-                result.items as unknown as Parameters<
-                  typeof NewsList
-                >[0]['initialNews']
-              }
-            />
-          ) : (
-            <NoSubscriptions hasSubscriptions={hasSubscriptions} />
-          )}
-        </div>
-      </main>
-    </div>
+            {/* Content */}
+            {result.items.length > 0 ? (
+              <NewsList
+                initialNews={
+                  result.items as unknown as Parameters<
+                    typeof NewsList
+                  >[0]['initialNews']
+                }
+              />
+            ) : (
+              <NoSubscriptions hasSubscriptions={hasSubscriptions} />
+            )}
+          </div>
+        </main>
+      </div>
+    </Wallpaper>
   );
 }

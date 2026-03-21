@@ -324,7 +324,7 @@ export function Sidebar() {
 
         {groups.map((group) => (
           <div key={group.id} className="space-y-1">
-            <button
+            <div
               onClick={() => {
                 const params = new URLSearchParams(searchParams);
                 params.set('group', group.id);
@@ -385,12 +385,12 @@ export function Sidebar() {
                   ✕
                 </button>
               </div>
-            </button>
+            </div>
 
             {currentGroupId === group.id && group.channels.length > 0 && (
               <div className="ml-4 pl-4 border-l border-black/5 dark:border-white/5 space-y-0.5">
                 {group.channels.map((ch) => (
-                  <button
+                  <div
                     key={ch.username}
                     onClick={(e) => handleRemoveFromGroup(e, group.id, ch)}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-sm text-black/60 dark:text-white/60 transition-all group-hover/ch:opacity-100"
@@ -401,7 +401,7 @@ export function Sidebar() {
                     <span className="text-[10px] text-red-500 opacity-0 group-hover:opacity-100">
                       убрать
                     </span>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -437,7 +437,7 @@ export function Sidebar() {
         ) : (
           <div className="space-y-1">
             {channels.map((channel) => (
-              <button
+              <div
                 key={channel.username}
                 onClick={() => {
                   const p = new URLSearchParams();
@@ -507,7 +507,7 @@ export function Sidebar() {
                     />
                   </svg>
                 </button>
-              </button>
+              </div>
             ))}
           </div>
         )}

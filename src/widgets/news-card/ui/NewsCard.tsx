@@ -121,6 +121,7 @@ export function NewsCard({ news }: NewsCardProps) {
                   alt={news.title || 'Изображение новости'}
                   fill
                   className="object-contain"
+                  loading="eager"
                   unoptimized
                   sizes="(max-width: 768px) 100vw, 672px"
                 />
