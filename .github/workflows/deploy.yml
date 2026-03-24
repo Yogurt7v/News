@@ -54,5 +54,6 @@ jobs:
           port: 22
           script: |
             cd /var/www/news
+            rm -rf .next node_modules
             cp -r .next node_modules package.json package-lock.json .env ./
             pm2 restart news || pm2 start npm --name news -- start
