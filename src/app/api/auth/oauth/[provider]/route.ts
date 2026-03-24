@@ -26,7 +26,7 @@ export async function GET(
       );
 
     const response = NextResponse.redirect(
-      p.authUrl + encodeURIComponent(redirectUrl)
+      p.authURL + encodeURIComponent(redirectUrl)
     );
 
     response.cookies.set(

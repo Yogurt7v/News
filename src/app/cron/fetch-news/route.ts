@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   try {
     const channels = getChannelsList();
-    const savedCount = await telegramParser.fetchAndSaveNews(channels, 10);
+    const savedCount = await telegramParser(channels, 10);
     return NextResponse.json({ success: true, savedCount });
   } catch (error) {
     console.error('Cron error:', error);

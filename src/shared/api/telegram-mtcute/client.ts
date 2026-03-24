@@ -30,7 +30,7 @@ const tg = new TelegramClient({
 // Функция для получения уже авторизованного клиента
 export async function getTelegramClient(): Promise<TelegramClient> {
   // Если клиент ещё не запущен, запускаем
-  if (!tg.isActive) {
+  if (!(tg as any).isActive) {
     console.log('\n🔐 Требуется авторизация в Telegram');
     console.log(
       'Отсканируйте QR-код в приложении Telegram (Настройки → Устройства → Сканировать QR-код)\n'
@@ -44,7 +44,8 @@ export async function getTelegramClient(): Promise<TelegramClient> {
           url
         );
       },
-      password: () => tg.input('Введите пароль 2FA (если есть): '),
+      password: () =>
+        (tg as any).input('Введите пароль 2FA (если есть): '),
     });
 
     console.log('\n✅ Авторизация успешна! Сессия сохранена в файл.');

@@ -29,10 +29,7 @@ export async function POST(request: Request) {
 
     // Парсим новости (можно настроить лимит через query-параметр, по умолчанию 5)
     const limit = 5;
-    const savedCount = await telegramParser.fetchAndSaveNews(
-      channels,
-      limit
-    );
+    const savedCount = await telegramParser(channels, limit);
 
     return NextResponse.json({
       success: true,

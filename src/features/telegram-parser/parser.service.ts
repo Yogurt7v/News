@@ -1,5 +1,3 @@
-'use server';
-
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
 import { TelegramClient } from '@mtcute/node';
 import fs from 'fs/promises';
@@ -185,10 +183,8 @@ export class TelegramParserService {
           formData.append('width', m.width.toString());
           formData.append('height', m.height.toString());
 
-          const fileObj = new File([buffer], m.fileName, {
-            type: m.mimeType,
-          });
-          formData.append('file', fileObj);
+          const fileObj = new Blob([buffer], { type: m.mimeType });
+          formData.append('file', fileObj, m.fileName);
 
           await pb
             .collection('media')
@@ -283,7 +279,7 @@ export class TelegramParserService {
   }
 }
 
-export async function runTelegramParser(
+export async function telegramParser(
   channels: string[],
   limit: number = 10
 ) {
