@@ -6,13 +6,16 @@ export async function GET() {
   const pbAuth = cookieStore.get('pb_auth');
 
   if (!pbAuth) {
-    return NextResponse.json({ user: null }, { status: 401 });
+    return NextResponse.json({ authenticated: false, user: null });
   }
 
   try {
     const data = JSON.parse(pbAuth.value);
-    return NextResponse.json({ user: data.model });
+    return NextResponse.json({
+      authenticated: !!data.model,
+      user: data.model || null,
+    });
   } catch {
-    return NextResponse.json({ user: null }, { status: 401 });
+    return NextResponse.json({ authenticated: false, user: null });
   }
 }
