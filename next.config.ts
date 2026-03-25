@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
         port: '8090',
         pathname: '/api/files/**',
       },
+      {
+        protocol: 'http',
+        hostname: '5.53.125.238',
+        port: '8090',
+        pathname: '/api/files/**',
+      },
     ],
   },
   /* config options here */
