@@ -4,6 +4,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 function SignInContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -27,7 +29,7 @@ function SignInContent() {
         if (!alive) return;
         if (data.authenticated) {
           // небольшая задержка, чтобы не конфликтовать с гидратацией
-          await new Promise(r => setTimeout(r, 0));
+          await new Promise((r) => setTimeout(r, 0));
           router.push(callbackUrl);
         }
       } catch (err) {
@@ -36,7 +38,9 @@ function SignInContent() {
       }
     };
     checkAuth();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [router, callbackUrl]);
 
   const handleCredentialsSubmit = async (
