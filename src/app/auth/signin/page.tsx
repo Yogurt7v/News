@@ -19,19 +19,24 @@ function SignInContent() {
   // Проверяем, не залогинен ли уже пользователь (по httpOnly cookie)
   useEffect(() => {
     let alive = true;
-    (async () => {
+    const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
-        const data = (await res.json()) as { authenticated?: boolean };
+        if (!res.ok) return; // не авторизован или ошибка, остаёмся на странице
+        const data = await res.json();
         if (!alive) return;
-        if (data.authenticated) router.push(callbackUrl);
-      } catch {
-        // ignore
+        if (data.authenticated) {
+          // небольшая задержка, чтобы не конфликтовать с гидратацией
+          await new Promise(r => setTimeout(r, 0));
+          router.push(callbackUrl);
+        }
+      } catch (err) {
+        console.error('Auth check failed', err);
+        // Ничего не делаем — страница входа остаётся
       }
-    })();
-    return () => {
-      alive = false;
     };
+    checkAuth();
+    return () => { alive = false; };
   }, [router, callbackUrl]);
 
   const handleCredentialsSubmit = async (
