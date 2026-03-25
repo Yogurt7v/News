@@ -6,10 +6,17 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-function SignInContent() {
+interface SignInContentProps {
+  callbackUrl?: string;
+}
+
+function SignInContent({
+  callbackUrl: initialCallbackUrl,
+}: SignInContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl =
+    initialCallbackUrl || searchParams.get('callbackUrl') || '/';
 
   const [showCredentials, setShowCredentials] = useState(false);
   const [error, setError] = useState('');
@@ -345,6 +352,12 @@ function SignInContent() {
   );
 }
 
+function SignInWithParams() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  return <SignInContent callbackUrl={callbackUrl} />;
+}
+
 export default function SignInPage() {
   return (
     <Suspense
@@ -354,7 +367,7 @@ export default function SignInPage() {
         </div>
       }
     >
-      <SignInContent />
+      <SignInWithParams />
     </Suspense>
   );
 }
