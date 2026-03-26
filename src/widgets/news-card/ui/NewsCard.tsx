@@ -152,7 +152,7 @@ export function NewsCard({ news }: NewsCardProps) {
             {/* Actions */}
             <div className="flex items-center gap-2 pt-3">
               <button
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-sm font-semibold text-foreground hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-[0.98]"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-sm font-semibold text-foreground hover:bg-white/80 dark:hover:bg-white/15 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('Анализ', news.id);
@@ -174,7 +174,7 @@ export function NewsCard({ news }: NewsCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-foreground hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-[0.98]"
+                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-foreground hover:bg-white/80 dark:hover:bg-white/15 hover:scale-105 active:scale-[0.98] transition-all duration-200"
               >
                 <svg
                   className="w-5 h-5"

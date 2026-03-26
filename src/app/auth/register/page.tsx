@@ -60,8 +60,8 @@ function RegisterContent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
       <div className="w-full max-w-sm">
-        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
-          <div className="flex justify-center mb-6">
+        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8 animate-scale-in">
+          <div className="flex justify-center mb-6 animate-fade-in-up">
             <div className="h-14 w-14 rounded-full bg-[#229ED9] flex items-center justify-center shadow-md shadow-blue-500/20">
               <svg
                 viewBox="0 0 24 24"

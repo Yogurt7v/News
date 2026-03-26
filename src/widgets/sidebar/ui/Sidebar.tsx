@@ -240,7 +240,7 @@ export function Sidebar() {
 
   const sidebarContent = (
     <div className="h-full flex flex-col bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-xl text-foreground">
-      <div className="p-5 border-b border-black/5 dark:border-white/5">
+      <div className="p-5 border-b border-black/5 dark:border-white/5 animate-fade-in-down">
         <div className="flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group"
@@ -316,7 +316,7 @@ export function Sidebar() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] cursor-pointer transition-colors"
+            className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
           >
             + Создать
           </button>

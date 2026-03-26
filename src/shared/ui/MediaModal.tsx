@@ -53,17 +53,17 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="relative w-full h-full flex items-center justify-center"
+        className="relative w-full h-full flex items-center justify-center animate-bounce-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка Закрыть */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[110] p-2 bg-white/10 hover:bg-white/20 rounded-full"
+          className="absolute top-6 right-6 text-white/50 hover:text-white hover:scale-110 active:scale-95 transition-all duration-200 z-[110] p-2 bg-white/10 hover:bg-white/20 rounded-full"
         >
           <svg
             className="w-8 h-8"
@@ -85,7 +85,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           <>
             <button
               onClick={prev}
-              className="absolute left-2 md:left-6 p-4 rounded-full bg-black/20 hover:bg-white/10 text-white transition-all z-[110]"
+              className="absolute left-2 md:left-6 p-4 rounded-full bg-black/20 hover:bg-white/10 hover:scale-110 active:scale-95 text-white transition-all duration-200 z-[110]"
             >
               <svg
                 className="w-8 h-8"
@@ -103,7 +103,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
             </button>
             <button
               onClick={next}
-              className="absolute right-2 md:right-6 p-4 rounded-full bg-black/20 hover:bg-white/10 text-white transition-all z-[110]"
+              className="absolute right-2 md:right-6 p-4 rounded-full bg-black/20 hover:bg-white/10 hover:scale-110 active:scale-95 text-white transition-all duration-200 z-[110]"
             >
               <svg
                 className="w-8 h-8"
@@ -149,7 +149,10 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
         </div>
 
         {/* Индикатор количества */}
-        <div className="absolute bottom-6 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full text-white/90 text-sm backdrop-blur-md font-medium">
+        <div
+          className="absolute bottom-6 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full text-white/90 text-sm backdrop-blur-md font-medium animate-fade-in"
+          style={{ animationDelay: '0.2s' }}
+        >
           {currentIndex + 1} / {media.length}
         </div>
       </div>

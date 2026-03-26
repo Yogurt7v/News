@@ -26,21 +26,27 @@ export function DeleteGroupModal({
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 sm:p-6">
-      <div className="bg-white dark:bg-[#1f1f22] w-full max-w-sm rounded-[20px] shadow-[0_18px_50px_rgba(0,0,0,0.45)] border border-black/5 dark:border-white/5 overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
+      <div className="bg-white dark:bg-[#1f1f22] w-full max-w-sm rounded-[20px] shadow-[0_18px_50px_rgba(0,0,0,0.45)] border border-black/5 dark:border-white/5 overflow-hidden animate-bounce-in">
         <div className="px-6 pt-5 pb-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold">
+            <p
+              className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold animate-fade-in"
+              style={{ animationDelay: '0.1s' }}
+            >
               Удаление папки
             </p>
-            <h3 className="mt-1 text-[18px] font-semibold text-gray-900 dark:text-gray-50 truncate">
+            <h3
+              className="mt-1 text-[18px] font-semibold text-gray-900 dark:text-gray-50 truncate animate-fade-in"
+              style={{ animationDelay: '0.15s' }}
+            >
               Удалить «{groupName}»?
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 hover:bg-black/10 dark:hover:bg-white/10 hover:scale-110 active:scale-95 transition-all duration-200"
             aria-label="Закрыть"
           >
             ✕
@@ -48,10 +54,16 @@ export function DeleteGroupModal({
         </div>
 
         <div className="px-6 pt-5 pb-4 text-center">
-          <div className="w-14 h-14 bg-red-100/80 dark:bg-red-500/15 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+          <div
+            className="w-14 h-14 bg-red-100/80 dark:bg-red-500/15 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl animate-scale-in"
+            style={{ animationDelay: '0.2s' }}
+          >
             🗑️
           </div>
-          <p className="text-[14px] text-gray-600 dark:text-gray-300">
+          <p
+            className="text-[14px] text-gray-600 dark:text-gray-300 animate-fade-in"
+            style={{ animationDelay: '0.25s' }}
+          >
             Папка{' '}
             <span className="font-semibold text-black dark:text-white">
               «{groupName}»
@@ -64,7 +76,7 @@ export function DeleteGroupModal({
           <button
             type="button"
             onClick={onClose}
-            className="sm:flex-1 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 rounded-full bg-white/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            className="sm:flex-1 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 rounded-full bg-white/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
             Отмена
           </button>
@@ -72,7 +84,7 @@ export function DeleteGroupModal({
             type="button"
             onClick={handleDelete}
             disabled={loading}
-            className="sm:flex-1 px-4 py-2.5 text-sm font-semibold rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="sm:flex-1 px-4 py-2.5 text-sm font-semibold rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
           >
             {loading ? 'Удаление...' : 'Удалить'}
           </button>

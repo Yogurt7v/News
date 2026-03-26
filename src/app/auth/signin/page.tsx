@@ -20,8 +20,9 @@ function SignInContent({
 }: SignInContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl =
-    initialCallbackUrl || searchParams.get('callbackUrl') || '/';
+  const callbackUrl = decodeURIComponent(
+    initialCallbackUrl || searchParams.get('callbackUrl') || '/'
+  );
 
   const [showCredentials, setShowCredentials] = useState(false);
   const [error, setError] = useState('');
@@ -98,20 +99,22 @@ function SignInContent({
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
       <div className="w-full max-w-sm">
-        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
-          <Logo />
+        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8 animate-scale-in">
+          <div className="animate-fade-in-up">
+            <Logo />
+          </div>
 
-          <h1 className="text-center text-xl font-semibold text-[#1c1c1e] dark:text-white mb-2">
+          <h1 className="text-center text-xl font-semibold text-[#1c1c1e] dark:text-white mb-2 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
             {showCredentials ? 'Вход по почте' : 'Вход в аккаунт'}
           </h1>
 
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
             {showCredentials
               ? 'Введите логин и пароль'
               : 'Продолжите через удобный способ'}
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
             {!showCredentials ? (
               <div className="space-y-3 animate-in fade-in duration-300">
                 <button

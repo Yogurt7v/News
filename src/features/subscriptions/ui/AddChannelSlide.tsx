@@ -167,12 +167,12 @@ export function AddChannelSlide({
         className="fixed inset-0 z-[199] bg-black/30 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
-      <div className="fixed top-0 right-0 bottom-0 w-[400px] max-w-full z-[200] animate-slide-in">
+      <div className="fixed top-0 left-0 bottom-0 w-[400px] max-w-full z-[200] animate-slide-in-left">
         <div className="h-full flex flex-col bg-white/80 dark:bg-[#1c1c1e]/90 backdrop-blur-xl border-l border-black/5 dark:border-white/5">
           <form action={formAction} className="h-full flex flex-col">
             <div className="p-6 border-b border-black/5 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="animate-fade-in-up">
                   <p className="text-[11px] font-semibold tracking-wide text-black/40 dark:text-white/40 uppercase">
                     Добавить канал
                   </p>
@@ -183,7 +183,7 @@ export function AddChannelSlide({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/20 transition-all flex items-center justify-center active:scale-95"
+                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
                 >
                   <svg
                     className="w-5 h-5 text-black/60 dark:text-white/60"
@@ -199,7 +199,10 @@ export function AddChannelSlide({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              <div>
+              <div
+                className="animate-fade-in-up"
+                style={{ animationDelay: '0.1s' }}
+              >
                 <label className="block text-[11px] font-semibold tracking-wide text-black/40 dark:text-white/40 uppercase mb-2">
                   Название или username
                 </label>
@@ -212,7 +215,7 @@ export function AddChannelSlide({
                     placeholder="Введите название канала..."
                     onChange={(e) => setQuery(e.target.value)}
                     required
-                    className="w-full px-4 py-4 pr-12 rounded-2xl bg-white/70 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 focus:border-[#229ED9]/50 focus:ring-2 focus:ring-[#229ED9]/20 outline-none transition-all placeholder:text-black/30 dark:placeholder:text-white/30"
+                    className="w-full px-4 py-4 pr-12 rounded-2xl bg-white/70 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 focus:border-[#229ED9]/50 focus:ring-2 focus:ring-[#229ED9]/20 outline-none hover:scale-[1.01] transition-all duration-200 placeholder:text-black/30 dark:placeholder:text-white/30"
                     autoComplete="off"
                   />
                   <input

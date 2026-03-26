@@ -42,21 +42,27 @@ export function CreateGroupModal({
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 sm:p-6">
-      <div className="bg-white dark:bg-[#1f1f22] w-full max-w-md rounded-[20px] shadow-[0_18px_50px_rgba(0,0,0,0.45)] border border-black/5 dark:border-white/5 overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
+      <div className="bg-white dark:bg-[#1f1f22] w-full max-w-md rounded-[20px] shadow-[0_18px_50px_rgba(0,0,0,0.45)] border border-black/5 dark:border-white/5 overflow-hidden animate-bounce-in">
         <div className="px-6 pt-5 pb-4 border-b border-black/5 dark:border-white/10 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold">
+            <p
+              className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold animate-fade-in"
+              style={{ animationDelay: '0.1s' }}
+            >
               Новая папка чатов
             </p>
-            <h3 className="mt-1 text-[18px] font-semibold text-gray-900 dark:text-gray-50 truncate">
+            <h3
+              className="mt-1 text-[18px] font-semibold text-gray-900 dark:text-gray-50 truncate animate-fade-in"
+              style={{ animationDelay: '0.15s' }}
+            >
               Создать папку
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 text-gray-500 hover:text-gray-900 hover:bg-black/10 dark:hover:bg-white/10 hover:scale-110 active:scale-95 transition-all duration-200"
             aria-label="Закрыть"
           >
             ✕
@@ -69,7 +75,7 @@ export function CreateGroupModal({
           </label>
           <input
             autoFocus
-            className="w-full px-3.5 py-2.5 rounded-xl bg-gray-100/90 dark:bg-white/5 text-sm text-gray-900 dark:text-gray-50 outline-none focus:ring-2 ring-offset-0 ring-[#229ED9] placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-shadow"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-gray-100/90 dark:bg-white/5 text-sm text-gray-900 dark:text-gray-50 outline-none focus:ring-2 ring-offset-0 ring-[#229ED9] focus:scale-[1.02] placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-200"
             placeholder="Например, Интересное"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -80,14 +86,15 @@ export function CreateGroupModal({
           <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase px-4 py-2">
             Выберите каналы
           </p>
-          {allChannels.map((ch) => (
+          {allChannels.map((ch, i) => (
             <label
               key={ch.username}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-colors ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
                 selected.some((c) => c.username === ch.username)
                   ? 'bg-[#229ED9]/10 dark:bg-[#229ED9]/20 border border-[#229ED9]/40'
                   : 'hover:bg-gray-50 dark:hover:bg-white/5'
               }`}
+              style={{ animationDelay: `${0.2 + i * 30}ms` }}
             >
               <input
                 type="checkbox"
@@ -111,7 +118,7 @@ export function CreateGroupModal({
           <button
             type="button"
             onClick={onClose}
-            className="sm:flex-1 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 rounded-full bg-white/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            className="sm:flex-1 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 rounded-full bg-white/80 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
             Отмена
           </button>
@@ -119,7 +126,7 @@ export function CreateGroupModal({
             type="button"
             onClick={handleSave}
             disabled={loading}
-            className="sm:flex-1 px-4 py-2.5 text-sm font-semibold rounded-full bg-[#229ED9] text-white shadow-sm hover:bg-[#1f8cc7] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="sm:flex-1 px-4 py-2.5 text-sm font-semibold rounded-full bg-[#229ED9] text-white shadow-sm hover:bg-[#1f8cc7] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
           >
             {loading ? 'Создание...' : 'Создать папку'}
           </button>
