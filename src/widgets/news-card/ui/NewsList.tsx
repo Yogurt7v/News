@@ -18,7 +18,7 @@ interface NewsListProps {
       type: string;
       file: string;
       order?: number;
-      id?: string;
+      id: string;
     }>;
     [key: string]: unknown;
   }>;

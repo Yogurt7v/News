@@ -3,7 +3,7 @@ import PocketBase from 'pocketbase';
 const getPocketBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return (
-      process.env.NEXT_PUBLIC_POCKETBASE_URL ||
+      process.env.POCKETBASE_URL ||
       window.location.origin.replace(':3000', ':8090')
     );
   }

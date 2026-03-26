@@ -19,7 +19,7 @@ interface NewsCardProps {
       type: string;
       file: string;
       order?: number;
-      id?: string;
+      id: string;
     }>;
     [key: string]: unknown;
   };
@@ -51,16 +51,30 @@ export function NewsCard({ news }: NewsCardProps) {
 
   let mediaItems: { type: string; url: string }[] = [];
 
-  // Handle new format from API (media array with file field)
+  const pbUrl =
+    typeof window !== 'undefined'
+      ? process.env.NEXT_PUBLIC_POCKETBASE_URL ||
+        window.location.origin.replace(':3000', ':8090')
+      : 'http://5.53.125.238:8090';
+
+  // Helper to generate correct PocketBase file URL
+  const getFileUrl = (record: { id: string }, filename: string) => {
+    try {
+      return pb.files.getURL(record, filename);
+    } catch {
+      return `${pbUrl}/api/files/media/${record.id}/${filename}`;
+    }
+  };
+
   if (news.media && Array.isArray(news.media)) {
     mediaItems = news.media.map((m) => ({
       type: m.type,
-      url: pb.files.getURL({ collectionId: 'media', id: m.id }, m.file),
+      url: getFileUrl({ id: m.id }, m.file),
     }));
   } else if (Array.isArray(expandedMedia)) {
-    mediaItems = expandedMedia.map((m) => ({
+    mediaItems = expandedMedia.map((m: any) => ({
       type: m.type,
-      url: pb.files.getURL(m, m.file),
+      url: getFileUrl({ id: m.id }, m.file),
     }));
   }
 
@@ -93,7 +107,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
             {timeAgo && (
               <span className="text-xs font-medium text-black/40 dark:text-white/40 px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
-                {timeAgo}
+                {timeAgo} назад
               </span>
             )}
           </div>
