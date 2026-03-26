@@ -213,31 +213,14 @@ export function Sidebar() {
 
     try {
       const res = await fetch('/api/cron/fetch-news', {
-        method: 'POST',
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${CRON_SECRET}`,
         },
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setParserStatus('success');
-        setParserResult({ savedCount: data.savedCount });
-        setParserLogs(data.logs || []);
-        setCurrentLog(data.logs?.[data.logs.length - 1] || '');
-        setLastUpdated(new Date());
-        setToastMessage({
-          message: `Сохранено ${data.savedCount} постов`,
-          type: 'success',
-        });
-        router.refresh();
-        setTimeout(() => {
-          setParserStatus('idle');
-          setParserResult(null);
-          setCurrentLog('');
-        }, 3000);
-      } else {
+      if (!res.ok) {
+        const data = await res.json();
         setParserStatus('error');
         setParserResult({ error: data.error || 'Ошибка' });
         setCurrentLog(data.error || 'Ошибка обновления');
@@ -249,7 +232,69 @@ export function Sidebar() {
           setParserStatus('idle');
           setParserResult(null);
           setCurrentLog('');
+          setToastMessage(null);
         }, 5000);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.done) {
+                setParserStatus('success');
+                setParserResult({ savedCount: data.savedCount });
+                setParserLogs(data.logs || []);
+                setLastUpdated(new Date());
+                setToastMessage({
+                  message: `Сохранено ${data.savedCount} постов`,
+                  type: 'success',
+                });
+                router.refresh();
+                setTimeout(() => {
+                  setParserStatus('idle');
+                  setParserResult(null);
+                  setCurrentLog('');
+                  setToastMessage(null);
+                }, 3000);
+              } else if (data.error) {
+                setParserStatus('error');
+                setParserResult({ error: data.error });
+                setCurrentLog(data.error);
+                setToastMessage({
+                  message: data.error,
+                  type: 'error',
+                });
+                setTimeout(() => {
+                  setParserStatus('idle');
+                  setParserResult(null);
+                  setCurrentLog('');
+                  setToastMessage(null);
+                }, 5000);
+              } else if (data.message) {
+                setCurrentLog(data.message);
+                setParserLogs((prev) => [...prev, data.message]);
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
       }
     } catch (e: any) {
       setParserStatus('error');
@@ -263,6 +308,7 @@ export function Sidebar() {
         setParserStatus('idle');
         setParserResult(null);
         setCurrentLog('');
+        setToastMessage(null);
       }, 5000);
     }
   };

@@ -29,10 +29,16 @@ export interface TelegramPost {
 export class TelegramParserService {
   private pbInstance: Client | null = null;
   private logs: string[] = [];
+  private callbacks?: ParserCallbacks;
+
+  public setCallbacks(callbacks?: ParserCallbacks) {
+    this.callbacks = callbacks;
+  }
 
   public log(msg: string) {
     this.logs.push(msg);
     console.log(msg);
+    this.callbacks?.onLog?.(msg);
   }
 
   public clearLogs() {
@@ -86,7 +92,7 @@ export class TelegramParserService {
       const allMedia: TelegramPostMedia[] = [];
 
       if (msgs.some((m) => m.media)) {
-        this.log(`➡️  Обработка медиа для поста ID: ${mainMsg.id}...`);
+        this.log(`➡️  Обработка медиа ID: ${mainMsg.id}...`);
         for (const msg of msgs) {
           if (msg.media) {
             const extracted = await this.extractMedia(msg.media, client);
@@ -181,9 +187,7 @@ export class TelegramParserService {
       });
 
       if (post.media.length > 0) {
-        this.log(
-          `   🚀 Загрузка в PocketBase: ${post.media.length} файлов...`
-        );
+        this.log(`   🚀 Загрузка в базу: ${post.media.length} файлов...`);
         for (let i = 0; i < post.media.length; i++) {
           const m = post.media[i];
           const buffer = await fs.readFile(m.tempPath);
@@ -330,7 +334,7 @@ export class TelegramParserService {
         }
       }
 
-      console.log(`✨ Очистка завершена. Удалено постов: ${deletedCount}`);
+      this.log(`✨ Очистка завершена. Удалено постов: ${deletedCount}`);
       return deletedCount;
     } catch (err) {
       console.error('❌ Ошибка при выполнении очистки:', err);
@@ -339,18 +343,25 @@ export class TelegramParserService {
   }
 }
 
+export interface ParserCallbacks {
+  onLog?: (message: string) => void;
+}
+
 export async function telegramParser(
   channels: string[],
-  limit: number = parseInt(process.env.POST_LIMIT!)
+  limit: number = parseInt(process.env.POST_LIMIT!),
+  callbacks?: ParserCallbacks
 ) {
   const service = new TelegramParserService();
   service.clearLogs();
+  service.setCallbacks(callbacks);
+
   service.log('🧹 Запуск очистки старых данных...');
   const deletedCount = await service.deleteOldNews(3);
   if (deletedCount > 0) {
     service.log(`♻️  Очищено постов: ${deletedCount}`);
   } else {
-    service.log(`✅ База уже чиста, старых постов нет.`);
+    service.log('✅ База уже чиста, старых постов нет.');
   }
   const savedCount = await service.fetchAndSaveNews(channels, limit);
   return {
