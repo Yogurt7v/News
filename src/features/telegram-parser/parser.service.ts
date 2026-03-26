@@ -141,11 +141,11 @@ export class TelegramParserService {
       const fileName = `${m.fileId}.${ext}`;
       const tmpPath = path.join(os.tmpdir(), fileName);
 
-      process.stdout.write(`   ⏳ Скачиваю ${type} ... `);
+      this.log(`   ⏳ Скачиваю ${type} ... `);
 
       await client.downloadToFile(tmpPath, m);
 
-      process.stdout.write(`✅\n`); // Завершаем строку лога после скачивания
+      this.log(`✅\n`); // Завершаем строку лога после скачивания
 
       return {
         type,
@@ -190,6 +190,12 @@ export class TelegramParserService {
         this.log(`   🚀 Загрузка в базу: ${post.media.length} файлов...`);
         for (let i = 0; i < post.media.length; i++) {
           const m = post.media[i];
+
+          const fileStats = await fs.stat(m.tempPath);
+          this.log(
+            `      📄 Размер файла: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`
+          );
+
           const buffer = await fs.readFile(m.tempPath);
           const formData = new FormData();
 
@@ -199,14 +205,15 @@ export class TelegramParserService {
           formData.append('width', m.width.toString());
           formData.append('height', m.height.toString());
 
-          const fileObj = new Blob([buffer], { type: m.mimeType });
+          const uint8Array = new Uint8Array(buffer);
+          const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
           await pb
             .collection('media')
             .create(formData, { requestKey: null });
           await fs.unlink(m.tempPath).catch(() => {});
-          process.stdout.write(
+          this.log(
             `      [${i + 1}/${post.media.length}] Файл загружен и удален из tmp\n`
           );
         }

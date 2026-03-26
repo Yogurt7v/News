@@ -51,30 +51,15 @@ export function NewsCard({ news }: NewsCardProps) {
 
   let mediaItems: { type: string; url: string }[] = [];
 
-  const pbUrl =
-    typeof window !== 'undefined'
-      ? process.env.NEXT_PUBLIC_POCKETBASE_URL ||
-        window.location.origin.replace(':3000', ':8090')
-      : 'http://5.53.125.238:8090';
-
-  // Helper to generate correct PocketBase file URL
-  const getFileUrl = (record: { id: string }, filename: string) => {
-    try {
-      return pb.files.getURL(record, filename);
-    } catch {
-      return `${pbUrl}/api/files/media/${record.id}/${filename}`;
-    }
-  };
-
   if (news.media && Array.isArray(news.media)) {
     mediaItems = news.media.map((m) => ({
       type: m.type,
-      url: getFileUrl({ id: m.id }, m.file),
+      url: pb.files.getURL(m, m.file),
     }));
   } else if (Array.isArray(expandedMedia)) {
-    mediaItems = expandedMedia.map((m: any) => ({
+    mediaItems = expandedMedia.map((m) => ({
       type: m.type,
-      url: getFileUrl({ id: m.id }, m.file),
+      url: pb.files.getURL(m, m.file),
     }));
   }
 
@@ -83,6 +68,8 @@ export function NewsCard({ news }: NewsCardProps) {
     ? new Date(news.publishedAt)
     : null;
   const timeAgo = publishedDate ? formatTimeAgo(publishedDate) : '';
+
+  console.log(expandedMedia);
 
   return (
     <>
