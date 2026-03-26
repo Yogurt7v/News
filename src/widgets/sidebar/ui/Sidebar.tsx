@@ -316,7 +316,7 @@ export function Sidebar() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
+            className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] cursor-pointer transition-colors"
           >
             + Создать
           </button>
