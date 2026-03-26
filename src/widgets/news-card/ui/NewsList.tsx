@@ -14,7 +14,12 @@ interface NewsListProps {
     imageUrl?: string;
     publishedAt?: string;
     expand?: Record<string, unknown>;
-    media?: Array<{ type: string; url: string }>;
+    media?: Array<{
+      type: string;
+      file: string;
+      order?: number;
+      id?: string;
+    }>;
     [key: string]: unknown;
   }>;
 }

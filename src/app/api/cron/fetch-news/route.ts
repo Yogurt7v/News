@@ -2,18 +2,15 @@ import { NextResponse } from 'next/server';
 import { getChannelsList } from '@/shared/config/telegram';
 import { telegramParser } from '@/features/telegram-parser/parser.service';
 
-// Проверка секретного ключа
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   if (!authHeader || !secret) return false;
-  // Ожидаем заголовок: "Bearer <секрет>"
   const token = authHeader.split(' ')[1];
   return token === secret;
 }
 
 export async function POST(request: Request) {
-  // Проверяем авторизацию
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -27,13 +24,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Парсим новости (можно настроить лимит через query-параметр, по умолчанию 5)
     const limit = 5;
-    const savedCount = await telegramParser(channels, limit);
+    const result = await telegramParser(channels, limit);
 
     return NextResponse.json({
       success: true,
-      savedCount,
+      savedCount: result.savedCount,
+      logs: result.logs,
       channels,
       timestamp: new Date().toISOString(),
     });
@@ -46,7 +43,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Разрешаем только POST (можно добавить и GET для тестирования, но лучше оставить POST)
 export async function GET() {
   return NextResponse.json(
     { error: 'Method not allowed' },

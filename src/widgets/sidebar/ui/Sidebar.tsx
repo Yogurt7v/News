@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
@@ -14,6 +14,8 @@ import {
   removeChannelFromGroup,
   renameGroup,
 } from '@/features/subscriptions/actions.pb';
+
+const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET || '';
 
 interface ChannelInfo {
   username: string;
@@ -110,6 +112,21 @@ export function Sidebar() {
   const [isAtTop, setIsAtTop] = useState(true);
   const lastScrollY = useRef(0);
 
+  const [parserStatus, setParserStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [parserResult, setParserResult] = useState<{
+    savedCount?: number;
+    error?: string;
+  } | null>(null);
+  const [parserLogs, setParserLogs] = useState<string[]>([]);
+  const [currentLog, setCurrentLog] = useState<string>('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [toastMessage, setToastMessage] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -134,19 +151,6 @@ export function Sidebar() {
   const currentChannel = searchParams.get('channel');
   const currentGroupId = searchParams.get('group');
 
-  const refreshData = useCallback(async () => {
-    try {
-      const [channelsList, groupsList] = await Promise.all([
-        getUserSubscriptions(),
-        getUserGroups(),
-      ]);
-      setChannels(channelsList);
-      setGroups(groupsList);
-    } catch (e) {
-      console.error('Failed to refresh sidebar data:', e);
-    }
-  }, []);
-
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/auth/signin');
@@ -164,9 +168,26 @@ export function Sidebar() {
     });
   };
 
+  const loadInitialData = async () => {
+    try {
+      const [channelsList, groupsList] = await Promise.all([
+        getUserSubscriptions(),
+        getUserGroups(),
+      ]);
+      setChannels(channelsList);
+      setGroups(groupsList);
+    } catch (e) {
+      console.error('Failed to refresh sidebar data:', e);
+    }
+  };
+
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    loadInitialData();
+  }, []);
+
+  const refreshData = async () => {
+    await loadInitialData();
+  };
 
   const openConfirm = (
     title: string,
@@ -182,6 +203,68 @@ export function Sidebar() {
       variant,
       onClose: closeConfirm,
     });
+  };
+
+  const runParser = async () => {
+    setParserStatus('loading');
+    setParserResult(null);
+    setParserLogs([]);
+    setCurrentLog('🚀 Запуск парсера...');
+
+    try {
+      const res = await fetch('/api/cron/fetch-news', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${CRON_SECRET}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setParserStatus('success');
+        setParserResult({ savedCount: data.savedCount });
+        setParserLogs(data.logs || []);
+        setCurrentLog(data.logs?.[data.logs.length - 1] || '');
+        setLastUpdated(new Date());
+        setToastMessage({
+          message: `Сохранено ${data.savedCount} постов`,
+          type: 'success',
+        });
+        router.refresh();
+        setTimeout(() => {
+          setParserStatus('idle');
+          setParserResult(null);
+          setCurrentLog('');
+        }, 3000);
+      } else {
+        setParserStatus('error');
+        setParserResult({ error: data.error || 'Ошибка' });
+        setCurrentLog(data.error || 'Ошибка обновления');
+        setToastMessage({
+          message: data.error || 'Ошибка обновления',
+          type: 'error',
+        });
+        setTimeout(() => {
+          setParserStatus('idle');
+          setParserResult(null);
+          setCurrentLog('');
+        }, 5000);
+      }
+    } catch (e: any) {
+      setParserStatus('error');
+      setParserResult({ error: e.message || 'Ошибка сети' });
+      setCurrentLog(e.message || 'Ошибка сети');
+      setToastMessage({
+        message: e.message || 'Ошибка сети',
+        type: 'error',
+      });
+      setTimeout(() => {
+        setParserStatus('idle');
+        setParserResult(null);
+        setCurrentLog('');
+      }, 5000);
+    }
   };
 
   const handleRenameGroup = async (id: string) => {
@@ -254,7 +337,11 @@ export function Sidebar() {
                 Будь в курсе
               </h2>
               <p className="text-xs text-black/40 dark:text-white/40">
-                Ваша лента
+                {parserStatus === 'loading'
+                  ? 'Загрузка новостей...'
+                  : parserStatus === 'error'
+                    ? 'Ошибка обновления'
+                    : 'Ваша лента'}
               </p>
             </div>
           </div>
@@ -274,6 +361,16 @@ export function Sidebar() {
           </button>
         </div>
       </div>
+      {parserStatus === 'loading' && currentLog && (
+        <div className="px-5 pb-3 mt-4">
+          <div className="flex items-center gap-3 bg-black/5 dark:bg-white/5 rounded-2xl px-4 py-3">
+            <div className="w-2 h-2 rounded-full bg-[#229ED9] animate-pulse" />
+            <p className="text-sm text-black/60 dark:text-white/60 truncate">
+              {currentLog}
+            </p>
+          </div>
+        </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-1">
         <button
@@ -546,6 +643,22 @@ export function Sidebar() {
           </svg>
           Выйти
         </button>
+        <button
+          onClick={runParser}
+          disabled={parserStatus === 'loading'}
+          className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all font-medium mt-2"
+        >
+          <svg
+            className={`w-5 h-5 ${parserStatus === 'loading' ? 'animate-spin' : ''}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {parserStatus === 'loading' ? 'Загрузка...' : 'Обновить новости'}
+        </button>
       </div>
     </div>
   );
@@ -555,6 +668,52 @@ export function Sidebar() {
       <aside className="hidden md:block w-80 shrink-0 h-screen sticky top-0">
         {sidebarContent}
       </aside>
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] animate-slide-up">
+          <div
+            className={`${
+              toastMessage.type === 'success'
+                ? 'bg-green-500'
+                : toastMessage.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-[#229ED9]'
+            } text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 font-medium`}
+          >
+            {toastMessage.type === 'success' && (
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path
+                  d="M5 13l4 4L19 7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            {toastMessage.type === 'error' && (
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path
+                  d="M6 18L18 6M6 6l12 12"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            <span>{toastMessage.message}</span>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => setMobileOpen(true)}

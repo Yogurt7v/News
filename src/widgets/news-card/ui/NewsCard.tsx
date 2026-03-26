@@ -15,7 +15,12 @@ interface NewsCardProps {
     imageUrl?: string;
     publishedAt?: string;
     expand?: Record<string, unknown>;
-    media?: Array<{ type: string; url: string }>;
+    media?: Array<{
+      type: string;
+      file: string;
+      order?: number;
+      id?: string;
+    }>;
     [key: string]: unknown;
   };
 }
@@ -46,13 +51,17 @@ export function NewsCard({ news }: NewsCardProps) {
 
   let mediaItems: { type: string; url: string }[] = [];
 
-  if (Array.isArray(expandedMedia)) {
+  // Handle new format from API (media array with file field)
+  if (news.media && Array.isArray(news.media)) {
+    mediaItems = news.media.map((m) => ({
+      type: m.type,
+      url: pb.files.getURL({ collectionId: 'media', id: m.id }, m.file),
+    }));
+  } else if (Array.isArray(expandedMedia)) {
     mediaItems = expandedMedia.map((m) => ({
       type: m.type,
       url: pb.files.getURL(m, m.file),
     }));
-  } else if (news.media && Array.isArray(news.media)) {
-    mediaItems = news.media;
   }
 
   const mainMedia = mediaItems.length > 0 ? mediaItems[0] : null;

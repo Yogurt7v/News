@@ -3,7 +3,6 @@ import { TelegramClient } from '@mtcute/node';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { File } from 'node:buffer';
 import type Client from 'pocketbase';
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
 
@@ -29,6 +28,20 @@ export interface TelegramPost {
 
 export class TelegramParserService {
   private pbInstance: Client | null = null;
+  private logs: string[] = [];
+
+  public log(msg: string) {
+    this.logs.push(msg);
+    console.log(msg);
+  }
+
+  public clearLogs() {
+    this.logs = [];
+  }
+
+  public getLogs(): string[] {
+    return [...this.logs];
+  }
 
   private async getPb(): Promise<Client> {
     if (!this.pbInstance) this.pbInstance = await createAdminClient();
@@ -38,10 +51,10 @@ export class TelegramParserService {
   async getChannelPosts(
     client: TelegramClient,
     channelUsername: string,
-    limit: number = 10
+    limit: number = parseInt(process.env.POST_LIMIT!)
   ): Promise<TelegramPost[]> {
     const username = channelUsername.replace('@', '');
-    console.log(`\n🔍 [${username}] Запрашиваю историю сообщений...`);
+    this.log(`\n🔍 [${username}] Запрашиваю историю сообщений...`);
 
     // Берем с запасом, чтобы собрать полные альбомы
     const messages = await client.getHistory(username, {
@@ -58,7 +71,7 @@ export class TelegramParserService {
     }
 
     const posts: TelegramPost[] = [];
-    console.log(
+    this.log(
       `📦 [${username}] Найдено групп/постов: ${groupedMessages.size}`
     );
 
@@ -73,7 +86,7 @@ export class TelegramParserService {
       const allMedia: TelegramPostMedia[] = [];
 
       if (msgs.some((m) => m.media)) {
-        console.log(`➡️  Обработка медиа для поста ID: ${mainMsg.id}...`);
+        this.log(`➡️  Обработка медиа для поста ID: ${mainMsg.id}...`);
         for (const msg of msgs) {
           if (msg.media) {
             const extracted = await this.extractMedia(msg.media, client);
@@ -122,8 +135,7 @@ export class TelegramParserService {
       const fileName = `${m.fileId}.${ext}`;
       const tmpPath = path.join(os.tmpdir(), fileName);
 
-      const sizeMb = m.size ? (m.size / (1024 * 1024)).toFixed(2) : '??';
-      process.stdout.write(`   ⏳ Скачиваю ${type} (${sizeMb} MB)... `);
+      process.stdout.write(`   ⏳ Скачиваю ${type} ... `);
 
       await client.downloadToFile(tmpPath, m);
 
@@ -169,7 +181,7 @@ export class TelegramParserService {
       });
 
       if (post.media.length > 0) {
-        console.log(
+        this.log(
           `   🚀 Загрузка в PocketBase: ${post.media.length} файлов...`
         );
         for (let i = 0; i < post.media.length; i++) {
@@ -202,26 +214,74 @@ export class TelegramParserService {
     }
   }
 
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    delayMs: number = 2000
+  ): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (e: any) {
+        lastError = e;
+        const isNetworkError =
+          e.code === 'ECONNRESET' ||
+          e.message?.includes('ECONNRESET') ||
+          e.message?.includes('ETIMEDOUT') ||
+          e.message?.includes('socket');
+
+        if (isNetworkError && attempt < maxRetries) {
+          this.log(
+            `⚠️ Попытка ${attempt}/${maxRetries} не удалась. Повтор через ${
+              delayMs / 1000
+            }с...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        } else if (attempt === maxRetries) {
+          console.error(
+            `🔴 Все ${maxRetries} попыток исчерпаны. Ошибка:`,
+            e.message
+          );
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
   async fetchAndSaveNews(
     channels: string[],
-    limit: number = 5
+    limit: number = parseInt(process.env.POST_LIMIT!)
   ): Promise<number> {
     const client = await getTelegramClient();
     let totalSaved = 0;
+    let lastError: Error | null = null;
 
     for (const channel of channels) {
       try {
-        const posts = await this.getChannelPosts(client, channel, limit);
+        const posts = await this.withRetry(
+          () => this.getChannelPosts(client, channel, limit),
+          3,
+          2000
+        );
         for (const post of posts) {
           if (await this.saveNews(post)) {
             totalSaved++;
-            console.log(`✨ Пост сохранен! (Всего: ${totalSaved})`);
+            this.log(`✨ Пост сохранен! (Всего: ${totalSaved})`);
           }
         }
-      } catch (e) {
-        console.error(`🔴 Ошибка на канале ${channel}:`, e);
+      } catch (e: any) {
+        lastError = e;
+        console.error(`🔴 Ошибка на канале ${channel}:`, e.message);
       }
     }
+
+    if (lastError && totalSaved === 0) {
+      throw new Error(`Не удалось получить новости: ${lastError.message}`);
+    }
+
     return totalSaved;
   }
 
@@ -242,7 +302,7 @@ export class TelegramParserService {
       .replace('T', ' ')
       .split('.')[0];
 
-    console.log(`🧹 [Cleanup] Поиск новостей старше чем: ${dateStr}`);
+    this.log(`🧹 [Cleanup] Поиск новостей старше чем: ${dateStr}`);
 
     try {
       // 1. Находим все старые новости
@@ -252,11 +312,11 @@ export class TelegramParserService {
       });
 
       if (oldRecords.length === 0) {
-        console.log('✅ Старых новостей не найдено.');
+        this.log('✅ Старых новостей не найдено.');
         return 0;
       }
 
-      console.log(
+      this.log(
         `🗑️  Найдено старых записей: ${oldRecords.length}. Начинаю удаление...`
       );
 
@@ -281,15 +341,20 @@ export class TelegramParserService {
 
 export async function telegramParser(
   channels: string[],
-  limit: number = 10
+  limit: number = parseInt(process.env.POST_LIMIT!)
 ) {
   const service = new TelegramParserService();
-  console.log('🧹 Запуск очистки старых данных...');
+  service.clearLogs();
+  service.log('🧹 Запуск очистки старых данных...');
   const deletedCount = await service.deleteOldNews(3);
   if (deletedCount > 0) {
-    console.log(`♻️  Очищено постов: ${deletedCount}`);
+    service.log(`♻️  Очищено постов: ${deletedCount}`);
   } else {
-    console.log(`✅ База уже чиста, старых постов нет.`);
+    service.log(`✅ База уже чиста, старых постов нет.`);
   }
-  return await service.fetchAndSaveNews(channels, limit);
+  const savedCount = await service.fetchAndSaveNews(channels, limit);
+  return {
+    savedCount,
+    logs: service.getLogs(),
+  };
 }
