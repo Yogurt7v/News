@@ -107,9 +107,29 @@ function ResetPasswordForm() {
   );
 }
 
+function ResetPasswordLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
+      <div className="w-full max-w-sm">
+        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
+          <div className="space-y-4">
+            <div className="h-6 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse mx-auto w-3/4" />
+            <div className="h-4 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse mx-auto w-full" />
+            <div className="h-12 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse" />
+            <div
+              className="h-12 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse"
+              style={{ animationDelay: '100ms' }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Загрузка...</div>}>
+    <Suspense fallback={<ResetPasswordLoader />}>
       <ResetPasswordForm />
     </Suspense>
   );

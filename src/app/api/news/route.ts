@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { news, groups, groupChannels } from '@/db/schema';
-import { desc, eq, inArray, and } from 'drizzle-orm';
 import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 interface NewsWithMedia {
@@ -10,8 +7,8 @@ interface NewsWithMedia {
   content: string;
   source: string;
   url: string;
-  publishedAt: Date;
-  createdAt: Date;
+  publishedAt: string;
+  createdAt: string;
   media: Array<{
     id: string;
     type: string;
@@ -36,27 +33,24 @@ async function fetchMediaFromPocketBase(
 
   if (newsIds.length === 0) return mediaMap;
 
-  // Fetch media for all news IDs from PocketBase
   const allMedia = await pb.collection('media').getFullList({
     filter: newsIds.map((id) => `newsId = "${id}"`).join(' || '),
   });
 
-  // Group by newsId
   for (const m of allMedia) {
-    const newsId = m.get('newsId');
+    const newsId = m.get('newsId') as string;
     if (!mediaMap.has(newsId)) {
       mediaMap.set(newsId, []);
     }
     mediaMap.get(newsId)!.push({
       id: m.id,
-      type: m.get('type'),
-      file: m.get('file'),
-      order: m.get('order') || 0,
+      type: m.get('type') as string,
+      file: m.get('file') as string,
+      order: (m.get('order') as number) || 0,
     });
   }
 
-  // Sort by order
-  for (const [_, arr] of mediaMap) {
+  for (const [, arr] of mediaMap) {
     arr.sort((a, b) => a.order - b.order);
   }
 
@@ -64,82 +58,66 @@ async function fetchMediaFromPocketBase(
 }
 
 export async function GET(request: NextRequest) {
-  // 1. Проверяем авторизацию
   const pb = await getServerPocketBase();
   const userId = pb.authStore.record?.id;
   if (!pb.authStore.isValid || !userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // 2. Получаем параметры запроса
   const { searchParams } = new URL(request.url);
   const offset = parseInt(searchParams.get('offset') || '0');
   const limit = parseInt(searchParams.get('limit') || '10');
   const channel = searchParams.get('channel');
   const groupId = searchParams.get('group');
 
-  let newsQuery;
+  let filter = '';
 
-  // 3. Фильтрация по группе
   if (groupId) {
-    const userGroup = await db.query.groups.findFirst({
-      where: and(eq(groups.id, groupId), eq(groups.userId, userId)),
-    });
-    if (!userGroup) {
+    const group = await pb.collection('groups').getOne(groupId);
+    if (!group || group.userId !== userId) {
       return NextResponse.json(
         { error: 'Group not found' },
         { status: 404 }
       );
     }
 
-    const groupChannelList = await db.query.groupChannels.findMany({
-      where: eq(groupChannels.groupId, groupId),
-      columns: { channelUsername: true },
-    });
+    const groupChannels = await pb
+      .collection('groupChannels')
+      .getFullList({
+        filter: `groupId = "${groupId}"`,
+      });
 
-    const usernames = groupChannelList.map(
-      (gc) => `@${gc.channelUsername}`
-    );
+    const usernames = groupChannels
+      .map((gc) => `@${gc.channelUsername?.replace('@', '')}`)
+      .filter(Boolean);
 
     if (usernames.length === 0) {
       return NextResponse.json([]);
     }
 
-    newsQuery = db.query.news.findMany({
-      where: inArray(news.source, usernames),
-      limit,
-      offset,
-      orderBy: [desc(news.publishedAt)],
-    });
-  }
-  // 4. Фильтрация по одному каналу
-  else if (channel) {
+    filter = usernames.map((u) => `source = "${u}"`).join(' || ');
+  } else if (channel) {
     const source = `@${channel.replace(/^@/, '')}`;
-    newsQuery = db.query.news.findMany({
-      where: eq(news.source, source),
-      limit,
-      offset,
-      orderBy: [desc(news.publishedAt)],
-    });
-  }
-  // 5. Без фильтрации
-  else {
-    newsQuery = db.query.news.findMany({
-      limit,
-      offset,
-      orderBy: [desc(news.publishedAt)],
-    });
+    filter = `source = "${source}"`;
   }
 
-  // 6. Выполняем запрос
-  const items = await newsQuery;
+  const newsList = await pb.collection('news').getList<{
+    id: string;
+    title: string;
+    content: string;
+    source: string;
+    url: string;
+    publishedAt: string;
+    createdAt: string;
+  }>(offset + 1, limit, {
+    sort: '-publishedAt',
+    filter: filter || undefined,
+  });
 
-  // 7. Получаем медиа из PocketBase
-  const newsIds = items.map((item) => item.id);
+  const newsIds = newsList.items.map((item) => item.id);
   const mediaMap = await fetchMediaFromPocketBase(pb, newsIds);
 
-  // 8. Объединяем
-  const result: NewsWithMedia[] = items.map((item) => ({
+  const result: NewsWithMedia[] = newsList.items.map((item) => ({
     ...item,
     media: mediaMap.get(item.id) || [],
   }));

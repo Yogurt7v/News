@@ -1,9 +1,6 @@
 'use server';
 
-import { db } from '@/db';
-import { groups, groupChannels } from '@/db/schema';
 import { revalidatePath } from 'next/cache';
-import { and, eq } from 'drizzle-orm';
 import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 async function requireUserId(): Promise<string> {
@@ -15,34 +12,41 @@ async function requireUserId(): Promise<string> {
 
 export async function createGroup(name: string) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  const [group] = await db
-    .insert(groups)
-    .values({
-      userId,
-      name,
-    })
-    .returning();
+  const group = await pb.collection('groups').create({
+    userId,
+    name,
+  });
 
   revalidatePath('/');
-
   return group;
 }
 
 export async function getUserGroups() {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  const userGroups = await db.query.groups.findMany({
-    where: eq(groups.userId, userId),
-    orderBy: (g, { asc }) => [asc(g.name)], // сортируем по имени
-    with: {
-      channels: {
-        columns: { channelUsername: true }, // берём только имена каналов
-      },
-    },
+  const groups = await pb.collection('groups').getFullList({
+    filter: `userId = "${userId}"`,
+    sort: 'name',
   });
 
-  return userGroups;
+  const groupsWithChannels = await Promise.all(
+    groups.map(async (group) => {
+      const channels = await pb.collection('groupChannels').getFullList({
+        filter: `groupId = "${group.id}"`,
+      });
+      return {
+        ...group,
+        channels: channels.map((ch) => ({
+          channelUsername: ch.channelUsername,
+        })),
+      };
+    })
+  );
+
+  return groupsWithChannels;
 }
 
 export async function addChannelToGroup(
@@ -50,24 +54,23 @@ export async function addChannelToGroup(
   channelUsername: string
 ) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  // Проверяем, что группа принадлежит текущему пользователю
-  const group = await db.query.groups.findFirst({
-    where: and(eq(groups.id, groupId), eq(groups.userId, userId)),
-  });
-  if (!group) throw new Error('Группа не найдена');
+  const group = await pb.collection('groups').getOne(groupId);
+  if (!group || group.userId !== userId) {
+    throw new Error('Группа не найдена');
+  }
 
-  // Очищаем имя канала от @ и лишних пробелов
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
-  // Вставляем связь. onConflictDoNothing игнорирует попытку добавить дубликат
-  await db
-    .insert(groupChannels)
-    .values({
+  try {
+    await pb.collection('groupChannels').create({
       groupId,
       channelUsername: cleanUsername,
-    })
-    .onConflictDoNothing();
+    });
+  } catch {
+    // Ignore duplicates
+  }
 
   revalidatePath('/');
 }
@@ -77,43 +80,60 @@ export async function removeChannelFromGroup(
   channelUsername: string
 ) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  await db
-    .delete(groupChannels)
-    .where(
-      and(
-        eq(groupChannels.groupId, groupId),
-        eq(
-          groupChannels.channelUsername,
-          channelUsername.replace(/^@/, '').trim()
-        )
-      )
-    );
+  const group = await pb.collection('groups').getOne(groupId);
+  if (!group || group.userId !== userId) {
+    throw new Error('Группа не найдена');
+  }
+
+  const cleanUsername = channelUsername.replace(/^@/, '').trim();
+
+  const channels = await pb.collection('groupChannels').getFullList({
+    filter: `groupId = "${groupId}" && channelUsername = "${cleanUsername}"`,
+  });
+
+  for (const ch of channels) {
+    await pb.collection('groupChannels').delete(ch.id);
+  }
 
   revalidatePath('/');
 }
 
 export async function deleteGroup(groupId: string) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  await db
-    .delete(groups)
-    .where(
-      and(eq(groups.id, groupId), eq(groups.userId, userId))
-    );
+  const group = await pb.collection('groups').getOne(groupId);
+  if (!group || group.userId !== userId) {
+    throw new Error('Группа не найдена');
+  }
+
+  const channels = await pb.collection('groupChannels').getFullList({
+    filter: `groupId = "${groupId}"`,
+  });
+
+  for (const ch of channels) {
+    await pb.collection('groupChannels').delete(ch.id);
+  }
+
+  await pb.collection('groups').delete(groupId);
 
   revalidatePath('/');
 }
 
 export async function renameGroup(groupId: string, newName: string) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  await db
-    .update(groups)
-    .set({ name: newName, updatedAt: new Date() })
-    .where(
-      and(eq(groups.id, groupId), eq(groups.userId, userId))
-    );
+  const group = await pb.collection('groups').getOne(groupId);
+  if (!group || group.userId !== userId) {
+    throw new Error('Группа не найдена');
+  }
+
+  await pb.collection('groups').update(groupId, {
+    name: newName,
+  });
 
   revalidatePath('/');
 }
@@ -123,27 +143,28 @@ export async function createGroupWithChannels(
   channelUsernames: string[]
 ) {
   const userId = await requireUserId();
+  const pb = await getServerPocketBase();
 
-  return await db.transaction(async (tx) => {
-    // 1. Создаем группу
-    const [group] = await tx
-      .insert(groups)
-      .values({
-        userId,
-        name,
-      })
-      .returning();
-
-    // 2. Если есть каналы, привязываем их
-    if (channelUsernames.length > 0) {
-      const values = channelUsernames.map((username) => ({
-        groupId: group.id,
-        channelUsername: username.replace(/^@/, '').trim(),
-      }));
-      await tx.insert(groupChannels).values(values);
-    }
-
-    revalidatePath('/');
-    return group;
+  const group = await pb.collection('groups').create({
+    userId,
+    name,
   });
+
+  if (channelUsernames.length > 0) {
+    const values = channelUsernames.map((username) => ({
+      groupId: group.id,
+      channelUsername: username.replace(/^@/, '').trim(),
+    }));
+
+    for (const val of values) {
+      try {
+        await pb.collection('groupChannels').create(val);
+      } catch {
+        // Ignore duplicates
+      }
+    }
+  }
+
+  revalidatePath('/');
+  return group;
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import pb from '@/lib/pocketbase';
 import { handlePasswordReset } from '@/app/actions';
 
 export default function ForgotPasswordPage() {

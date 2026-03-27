@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
 import { pb } from '@/shared/lib/pocketbase';
+import { getFileUrl } from '@/shared/lib/files';
 
 interface NewsCardProps {
   news: {
@@ -54,12 +55,12 @@ export function NewsCard({ news }: NewsCardProps) {
   if (news.media && Array.isArray(news.media)) {
     mediaItems = news.media.map((m) => ({
       type: m.type,
-      url: pb.files.getURL(m, m.file),
+      url: getFileUrl(news, m),
     }));
   } else if (Array.isArray(expandedMedia)) {
     mediaItems = expandedMedia.map((m) => ({
       type: m.type,
-      url: pb.files.getURL(m, m.file),
+      url: getFileUrl(news, m),
     }));
   }
 

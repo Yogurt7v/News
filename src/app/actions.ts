@@ -1,9 +1,9 @@
 'use server';
 
-import createServerClient from '@/lib/pocketbase';
+import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
 export async function handlePasswordReset(email: string) {
-  const pb = await createServerClient();
+  const pb = await getServerPocketBase();
   try {
     await pb.collection('users').requestPasswordReset(email);
     return { success: true };

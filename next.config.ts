@@ -4,27 +4,20 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '8090',
-        pathname: '/api/files/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '5.53.125.238',
-        port: '8090',
+        protocol: 'https',
+        hostname: 'be-informed.ru',
         pathname: '/api/files/**',
       },
     ],
   },
-  /* config options here */
   reactCompiler: false,
 
-  serverExternalPackages: [
-    '@mtcute/node',
-    '@mtcute/wasm',
-    // '@mtcute/crypto-node',
-  ],
+  serverExternalPackages: ['@mtcute/node', '@mtcute/wasm'],
+
+  //  если будут проблемы с CORS или путями
+  experimental: {
+    serverComponentsExternalPackages: ['@mtcute/node', '@mtcute/wasm'],
+  },
 };
 
 export default nextConfig;

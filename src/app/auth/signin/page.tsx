@@ -104,17 +104,26 @@ function SignInContent({
             <Logo />
           </div>
 
-          <h1 className="text-center text-xl font-semibold text-[#1c1c1e] dark:text-white mb-2 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+          <h1
+            className="text-center text-xl font-semibold text-[#1c1c1e] dark:text-white mb-2 animate-fade-in-up"
+            style={{ animationDelay: '50ms' }}
+          >
             {showCredentials ? 'Вход по почте' : 'Вход в аккаунт'}
           </h1>
 
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          <p
+            className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6 animate-fade-in-up"
+            style={{ animationDelay: '100ms' }}
+          >
             {showCredentials
               ? 'Введите логин и пароль'
               : 'Продолжите через удобный способ'}
           </p>
 
-          <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <div
+            className="space-y-3 animate-fade-in-up"
+            style={{ animationDelay: '150ms' }}
+          >
             {!showCredentials ? (
               <div className="space-y-3 animate-in fade-in duration-300">
                 <button
@@ -174,15 +183,38 @@ function SignInWithParams() {
   return <SignInContent callbackUrl={callbackUrl} />;
 }
 
+function SignInLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
+      <div className="w-full max-w-sm">
+        <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
+          <div className="flex flex-col items-center">
+            <div className="relative mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1a8bc2] animate-pulse shadow-lg shadow-[#229ED9]/20" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1a8bc2] animate-ping opacity-20" />
+            </div>
+
+            <div className="space-y-3 w-full">
+              <div className="h-11 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse" />
+              <div
+                className="h-11 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse"
+                style={{ animationDelay: '100ms' }}
+              />
+              <div
+                className="h-11 bg-gray-100 dark:bg-[#2a2a2c] rounded-xl animate-pulse"
+                style={{ animationDelay: '200ms' }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SignInPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10]">
-          <div className="animate-pulse text-gray-400">Загрузка...</div>
-        </div>
-      }
-    >
+    <Suspense fallback={<SignInLoader />}>
       <SignInWithParams />
     </Suspense>
   );
