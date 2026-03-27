@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const CRON_SECRET = process.env.CRON_SECRET || '';
+const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET || '';
 
 interface ToastMessage {
   message: string;
