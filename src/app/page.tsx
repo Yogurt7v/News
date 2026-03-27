@@ -20,6 +20,10 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   const { channel, group } = await searchParams;
 
+  const isAdmin =
+    (pb.authStore.model as unknown as { isAdmin?: boolean })?.isAdmin ??
+    false;
+
   let filter = '';
   let hasSubscriptions = false;
   let subscriptionCount = 0;
@@ -89,7 +93,7 @@ export default async function HomePage({ searchParams }: PageProps) {
   return (
     <Wallpaper>
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar isAdmin={isAdmin} />
         <main className="flex-1 min-w-0">
           <div className="max-w-2xl mx-auto px-4 py-6">
             {/* Header */}

@@ -69,8 +69,6 @@ export function NewsCard({ news }: NewsCardProps) {
     : null;
   const timeAgo = publishedDate ? formatTimeAgo(publishedDate) : '';
 
-  console.log(expandedMedia);
-
   return (
     <>
       <article className="animate-fade-in">
