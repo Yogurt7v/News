@@ -1,21 +1,26 @@
-type RecordWithFile = {
-  id: string;
-  collectionId?: string;
-  collectionName?: string;
-};
-
-type FileField = {
+type MediaItem = {
   id?: string;
   file: string;
+  type?: string;
+  order?: number;
 };
 
 export function getFileUrl(
-  record: RecordWithFile,
-  field: FileField | string
+  collection: string,
+  recordId: string,
+  filename: string
 ): string {
-  const filename = typeof field === 'string' ? field : field.file;
-  const collectionName = record.collectionName || 'unknown';
-  const recordId = record.id;
+  return `/api/files/${collection}/${recordId}/${filename}`;
+}
 
-  return `/api/files/${collectionName}/${recordId}/${filename}`;
+export function getMediaFileUrl(
+  media: MediaItem,
+  newsId?: string
+): string {
+  const recordId = media.id || newsId;
+  if (!recordId) {
+    console.warn('getMediaFileUrl: no record ID provided');
+    return '/placeholder-image';
+  }
+  return `/api/files/media/${recordId}/${media.file}`;
 }
