@@ -9,7 +9,6 @@ export async function GET(
     process.env.POCKETBASE_URL || 'http://5.53.125.238:8090';
 
   const filePath = path.join('/');
-  console.log('Proxy file request:', { path, filePath, pocketbaseUrl });
   const url = `${pocketbaseUrl}/api/files/${filePath}`;
 
   try {
