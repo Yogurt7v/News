@@ -1,13 +1,7 @@
 'use client';
 
-interface ToastMessage {
-  message: string;
-  type: 'success' | 'error' | 'info';
-}
-
 interface SidebarControllerProps {
   isOpen: boolean;
-  toastMessage: ToastMessage | null;
   isScrollingDown: boolean;
   children: React.ReactNode;
   onMenuClick: () => void;
@@ -16,7 +10,6 @@ interface SidebarControllerProps {
 
 export function SidebarController({
   isOpen,
-  toastMessage,
   isScrollingDown,
   children,
   onMenuClick,
@@ -52,52 +45,6 @@ export function SidebarController({
           <aside className="absolute top-0 left-0 h-full w-[85%] max-w-[320px] shadow-2xl animate-slide-in-right">
             {children}
           </aside>
-        </div>
-      )}
-
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] animate-slide-up">
-          <div
-            className={`${
-              toastMessage.type === 'success'
-                ? 'bg-green-500'
-                : toastMessage.type === 'error'
-                  ? 'bg-red-500'
-                  : 'bg-[#229ED9]'
-            } text-white px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 font-medium`}
-          >
-            {toastMessage.type === 'success' && (
-              <svg
-                className="w-5 h-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path
-                  d="M5 13l4 4L19 7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-            {toastMessage.type === 'error' && (
-              <svg
-                className="w-5 h-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path
-                  d="M6 18L18 6M6 6l12 12"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-            <span>{toastMessage.message}</span>
-          </div>
         </div>
       )}
     </>

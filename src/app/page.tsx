@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
-import { NewsList } from '@/widgets/news-card/ui/NewsList';
-import createServerClient from '@/shared/lib/pocketbase.server';
-import { NoSubscriptions } from '@/widgets/sidebar/ui/NoSubscriptions';
 import { Wallpaper } from '@/widgets/wallpaper/ui/Wallpaper';
-import { PageHeader } from '@/app/page/ui/PageHeader';
+import createServerClient from '@/shared/lib/pocketbase.server';
+import { PageContent } from './page/ui/PageContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,31 +88,37 @@ export default async function HomePage({ searchParams }: PageProps) {
       ? `${subscriptionCount} канал${subscriptionCount === 1 ? '' : subscriptionCount < 5 ? 'а' : 'ов'} • ${result.totalItems} новостей`
       : undefined;
 
+  const newsItems = result.items as unknown as Array<{
+    id: string;
+    title: string;
+    content: string;
+    source: string;
+    url: string;
+    imageUrl?: string;
+    publishedAt?: string;
+    expand?: Record<string, unknown>;
+    media?: Array<{
+      type: string;
+      file: string;
+      order?: number;
+      id: string;
+    }>;
+  }>;
+
   return (
     <Wallpaper>
       <div className="flex min-h-screen">
-        <Sidebar isAdmin={isAdmin} />
+        <Sidebar />
         <main className="flex-1 min-w-0">
           <div className="max-w-2xl mx-auto px-4 py-6">
-            {/* Header */}
-            <PageHeader
+            <PageContent
               title={pageTitle}
               statsText={statsText}
               showHint={!hasSubscriptions && !channel && !group}
+              hasSubscriptions={hasSubscriptions}
+              news={newsItems}
+              isAdmin={isAdmin}
             />
-
-            {/* Content */}
-            {result.items.length > 0 ? (
-              <NewsList
-                initialNews={
-                  result.items as unknown as Parameters<
-                    typeof NewsList
-                  >[0]['initialNews']
-                }
-              />
-            ) : (
-              <NoSubscriptions hasSubscriptions={hasSubscriptions} />
-            )}
           </div>
         </main>
       </div>

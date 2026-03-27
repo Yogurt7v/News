@@ -1,13 +1,17 @@
+import { ReactNode } from 'react';
+
 interface PageHeaderProps {
   title: string;
   statsText?: string;
   showHint: boolean;
+  children?: ReactNode;
 }
 
 export function PageHeader({
   title,
   statsText,
   showHint,
+  children,
 }: PageHeaderProps) {
   return (
     <div className="mb-6 animate-fade-in-up">
@@ -29,6 +33,7 @@ export function PageHeader({
             Добавьте каналы для начала чтения
           </p>
         )}
+        {children}
       </div>
     </div>
   );

@@ -1,18 +1,17 @@
 'use client';
 
 interface SidebarHeaderProps {
-  parserStatus: 'idle' | 'loading' | 'success' | 'error';
   onAddClick: () => void;
 }
 
-export function SidebarHeader({
-  parserStatus,
-  onAddClick,
-}: SidebarHeaderProps) {
+export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
   return (
     <div className="p-5 border-b border-black/5 dark:border-white/5 animate-fade-in-down">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 cursor-pointer group">
+        <div
+          className="flex items-center gap-3 cursor-pointer group"
+          onClick={() => (window.location.href = '/')}
+        >
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1b8ec2] flex items-center justify-center text-white shadow-lg shadow-[#229ED9]/30 group-hover:shadow-xl group-hover:shadow-[#229ED9]/40 transition-all">
             <span className="text-xl font-bold">N</span>
           </div>
@@ -21,11 +20,7 @@ export function SidebarHeader({
               Будь в курсе
             </h2>
             <p className="text-xs text-black/40 dark:text-white/40">
-              {parserStatus === 'loading'
-                ? 'Загрузка новостей...'
-                : parserStatus === 'error'
-                  ? 'Ошибка обновления'
-                  : 'Ваша лента'}
+              Ваша лента
             </p>
           </div>
         </div>
