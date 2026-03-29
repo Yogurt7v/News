@@ -1,35 +1,34 @@
 import 'dotenv/config';
 import '@mtcute/wasm';
-import {
-  MemoryStorage,
-  SqliteStorage,
-  TelegramClient,
-} from '@mtcute/node';
+import { SqliteStorage, TelegramClient } from '@mtcute/node';
 import QRcode from 'qrcode-terminal';
 import path from 'path';
 import fs from 'fs';
 
-const sessionDir = path.join(process.cwd(), 'sessions');
+const apiId = Number(process.env.TELEGRAM_API_ID);
+const apiHash = process.env.TELEGRAM_API_HASH!;
+
+// В production (Vercel) используем /tmp — единственная writable директория
+// В локальной разработке — папка sessions в корне проекта
+const isProduction =
+  process.env.NODE_ENV === 'production' || process.env.VERCEL;
+const sessionDir = isProduction
+  ? '/tmp/sessions'
+  : path.join(process.cwd(), 'sessions');
+
 if (!fs.existsSync(sessionDir)) {
   fs.mkdirSync(sessionDir, { recursive: true });
 }
 
-// Читаем переменные окружения
-const apiId = Number(process.env.TELEGRAM_API_ID);
-const apiHash = process.env.TELEGRAM_API_HASH!;
-
 const storage = new SqliteStorage(path.join(sessionDir, 'tg-session.db'));
 
-// Создаём клиент с файловым хранилищем (сессия сохраняется в session/telegram.json)
 const tg = new TelegramClient({
   apiId,
   apiHash,
-  storage, // данные сохраняются в файл
+  storage,
 });
 
-// Функция для получения уже авторизованного клиента
 export async function getTelegramClient(): Promise<TelegramClient> {
-  // Если клиент ещё не запущен, запускаем
   if (!(tg as any).isActive) {
     console.log('\n🔐 Требуется авторизация в Telegram');
     console.log(
