@@ -1,5 +1,4 @@
 import { getTelegramClient } from '@/shared/api/telegram-mtcute/client';
-import type { Chat } from '@mtcute/core';
 
 interface SearchResult {
   id: string;
@@ -8,6 +7,21 @@ interface SearchResult {
   participantsCount: number;
   type: 'channel' | 'group';
   isPrivate: boolean;
+}
+
+interface ChatLike {
+  _: string;
+  id: string | number;
+  title?: string;
+  username?: string | null;
+  participantsCount?: number | null;
+}
+
+function isChannelOrGroup(chat: unknown): chat is ChatLike {
+  const c = chat as ChatLike;
+  return (
+    c && typeof c === 'object' && (c._ === 'channel' || c._ === 'chat')
+  );
 }
 
 export async function GET(request: Request) {
@@ -19,33 +33,33 @@ export async function GET(request: Request) {
   try {
     const client = await getTelegramClient();
 
-    const chats: Chat[] = [];
-    for await (const dialog of client.iterDialogs({ limit: 300 })) {
-      if ('title' in dialog.peer) {
-        chats.push(dialog.peer as Chat);
-      }
-    }
+    // Глобальный поиск через contacts.search
+    const result = await client.call({
+      _: 'contacts.search',
+      q: q.trim(),
+      limit: 10,
+    });
 
-    const query = q.toLowerCase();
-    const results = chats
-      .filter((chat) => chat.title.toLowerCase().includes(query))
-      .sort((a, b) => {
-        const aStarts = a.title.toLowerCase().startsWith(query);
-        const bStarts = b.title.toLowerCase().startsWith(query);
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-        return a.title.localeCompare(b.title);
+    const searchResults: SearchResult[] = (result.chats as unknown[])
+      .filter(isChannelOrGroup)
+      .map((chat) => {
+        const username = chat.username ?? null;
+        const title = chat.title ?? '';
+        const participantsCount = chat.participantsCount ?? 0;
+
+        return {
+          id: chat.id.toString(),
+          title,
+          username,
+          participantsCount,
+          type: (chat._ === 'channel' ? 'channel' : 'group') as
+            | 'channel'
+            | 'group',
+          isPrivate: !username,
+        };
       })
+      .filter((r) => r.title)
       .slice(0, 50);
-
-    const searchResults: SearchResult[] = results.map((chat) => ({
-      id: chat.id.toString(),
-      title: chat.title,
-      username: chat.username ?? null,
-      participantsCount: chat.membersCount ?? 0,
-      type: chat.chatType === 'channel' ? 'channel' : 'group',
-      isPrivate: !chat.username,
-    }));
 
     return Response.json(searchResults);
   } catch (error: unknown) {
