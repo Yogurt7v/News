@@ -1,55 +1,60 @@
 import 'dotenv/config';
 import '@mtcute/wasm';
-import { SqliteStorage, TelegramClient } from '@mtcute/node';
-import QRcode from 'qrcode-terminal';
+import {
+  MemoryStorage,
+  SqliteStorage,
+  TelegramClient,
+} from '@mtcute/node';
 import path from 'path';
 import fs from 'fs';
 
 const apiId = Number(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH!;
 
-// В production (Vercel) используем /tmp — единственная writable директория
-// В локальной разработке — папка sessions в корне проекта
-const isProduction =
-  process.env.NODE_ENV === 'production' || process.env.VERCEL;
-const sessionDir = isProduction
-  ? '/tmp/sessions'
-  : path.join(process.cwd(), 'sessions');
+// В production (Vercel) используем MemoryStorage + сессию из переменной окружения
+// В локальной разработке — SqliteStorage с файлом
+const isProduction = process.env.VERCEL === '1';
 
-if (!fs.existsSync(sessionDir)) {
-  fs.mkdirSync(sessionDir, { recursive: true });
+function createClient() {
+  if (isProduction) {
+    // Vercel: MemoryStorage, сессия загружается из env через tg.start({ session })
+    return new TelegramClient({
+      apiId,
+      apiHash,
+      storage: new MemoryStorage(),
+    });
+  }
+
+  // Локально: SqliteStorage с файлом
+  const sessionDir = path.join(process.cwd(), 'sessions');
+  if (!fs.existsSync(sessionDir)) {
+    fs.mkdirSync(sessionDir, { recursive: true });
+  }
+
+  return new TelegramClient({
+    apiId,
+    apiHash,
+    storage: new SqliteStorage(path.join(sessionDir, 'tg-session.db')),
+  });
 }
 
-const storage = new SqliteStorage(path.join(sessionDir, 'tg-session.db'));
-
-const tg = new TelegramClient({
-  apiId,
-  apiHash,
-  storage,
-});
+const tg = createClient();
 
 export async function getTelegramClient(): Promise<TelegramClient> {
-  if (!(tg as any).isActive) {
-    console.log('\n🔐 Требуется авторизация в Telegram');
-    console.log(
-      'Отсканируйте QR-код в приложении Telegram (Настройки → Устройства → Сканировать QR-код)\n'
-    );
-
-    await tg.start({
-      qrCodeHandler: (url) => {
-        QRcode.generate(url, { small: true });
-        console.log(
-          '\nИли перейдите по ссылке (если QR не отображается):',
-          url
-        );
-      },
-      password: () =>
-        (tg as any).input('Введите пароль 2FA (если есть): '),
-    });
-
-    console.log('\n✅ Авторизация успешна! Сессия сохранена в файл.');
+  if (isProduction) {
+    // На Vercel: загружаем сессию из переменной окружения
+    const sessionString = process.env.MT_CUTE_SESSION_STRING;
+    if (!sessionString) {
+      throw new Error(
+        'MT_CUTE_SESSION_STRING is not set. Run: npm run session:export'
+      );
+    }
+    await tg.start({ session: sessionString });
+    console.log('Telegram клиент запущен (сессия из env)');
   } else {
-    console.log('🔑 Используется сохранённая сессия Telegram');
+    // Локально: сессия в файле, при необходимости запрашиваем QR-код
+    await tg.start();
   }
+
   return tg;
 }

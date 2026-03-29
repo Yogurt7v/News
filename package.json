@@ -13,6 +13,7 @@
     "telegram:test": "tsx src/shared/api/telegram/test.ts",
     "test:pb": "tsx src/scripts/test-pocketbase.ts",
     "parse:run": "tsx src/scripts/run-parser.ts",
+    "session:export": "tsx src/scripts/export-session.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
