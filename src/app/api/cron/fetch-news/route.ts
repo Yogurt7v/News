@@ -6,6 +6,11 @@ import {
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
 
 function isAuthorized(request: Request): boolean {
+  // Vercel Cron добавляет заголовок x-vercel-cron: 1
+  const vercelCronHeader = request.headers.get('x-vercel-cron');
+  if (vercelCronHeader === '1') return true;
+
+  // Ручной запуск с кнопки — проверяем CRON_SECRET
   const authHeader = request.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   if (!authHeader || !secret) return false;

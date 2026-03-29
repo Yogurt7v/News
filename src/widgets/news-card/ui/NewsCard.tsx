@@ -153,7 +153,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </h2>
 
             {news.content && (
-              <p className="text-[15px] leading-relaxed text-black/60 dark:text-white/60 line-clamp-3">
+              <p className="text-[15px] leading-relaxed text-black/60 dark:text-white/60 ">
                 {news.content}
               </p>
             )}
