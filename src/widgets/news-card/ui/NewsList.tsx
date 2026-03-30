@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import {
+  useState,
+  useTransition,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
+import { useNewsSubscription } from '@/shared/lib/useNewsSubscription';
 
 interface NewsListProps {
   initialNews: Array<{
@@ -28,6 +35,8 @@ export function NewsList({ initialNews }: NewsListProps) {
   const [news, setNews] = useState(initialNews);
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length === 20);
+  const [newNewsCount, setNewNewsCount] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const searchParams = useSearchParams();
   const currentChannel = searchParams.get('channel');
@@ -37,6 +46,29 @@ export function NewsList({ initialNews }: NewsListProps) {
     setNews(initialNews);
     setHasMore(initialNews.length === 20);
   }, [initialNews]);
+
+  const handleNewNews = useCallback(
+    (newNews: Record<string, unknown>) => {
+      if (!currentChannel || newNews.source === `@${currentChannel}`) {
+        setNewNewsCount((prev) => prev + 1);
+      }
+    },
+    [currentChannel]
+  );
+
+  useNewsSubscription({
+    pbUrl:
+      process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090',
+    onNewNews: handleNewNews,
+    enabled: true,
+  });
+
+  const showNewNews = () => {
+    setNews((prev) =>
+      [initialNews[0] || news[0], ...prev].filter(Boolean)
+    );
+    setNewNewsCount(0);
+  };
 
   const loadMore = async () => {
     startTransition(async () => {
@@ -50,14 +82,34 @@ export function NewsList({ initialNews }: NewsListProps) {
         params.set('group', currentGroup);
       }
       const res = await fetch(`/api/news?${params.toString()}`);
-      const newNews = await res.json();
-      setNews((prev) => [...prev, ...newNews]);
-      setHasMore(newNews.length === 20);
+      const newNewsItems = await res.json();
+      setNews((prev) => [...prev, ...newNewsItems]);
+      setHasMore(newNewsItems.length === 20);
     });
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5" ref={listRef}>
+      {newNewsCount > 0 && (
+        <button
+          onClick={showNewNews}
+          className="w-full py-3 rounded-2xl bg-[#229ED9] text-white font-semibold hover:bg-[#1b8ec2] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 animate-fade-in-up"
+        >
+          <svg
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+          </svg>
+          Показать {newNewsCount} нов
+          {newNewsCount === 1 ? 'ую' : newNewsCount < 5 ? 'ые' : 'ых'}{' '}
+          новост{newNewsCount === 1 ? 'ь' : 'ей'}
+        </button>
+      )}
+
       {news.map((item, index) => (
         <div
           key={item.id}
