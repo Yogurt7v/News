@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
-import { pb } from '@/shared/lib/pocketbase';
 import { getMediaFileUrl } from '@/shared/lib/files';
 
 interface NewsCardProps {
@@ -27,17 +26,12 @@ interface NewsCardProps {
 }
 
 const formatTimeAgo = (date: Date): string => {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (minutes < 1) return 'только что';
-  if (minutes < 60) return `${minutes} мин`;
-  if (hours < 24) return `${hours} ч`;
-  if (days < 7) return `${days} д`;
-  return date.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString('ru', {
+    day: 'numeric',
+    month: 'long',
+    hour: 'numeric',
+    minute: 'numeric',
+  });
 };
 
 export function NewsCard({ news }: NewsCardProps) {
@@ -93,7 +87,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
             {timeAgo && (
               <span className="text-xs font-medium text-black/40 dark:text-white/40 px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
-                {timeAgo} назад
+                {timeAgo}
               </span>
             )}
           </div>
@@ -149,7 +143,7 @@ export function NewsCard({ news }: NewsCardProps) {
           {/* Content */}
           <div className="p-5 space-y-3">
             <h2 className="text-[17px] font-bold leading-tight text-foreground">
-              {news.title}
+              {news.title}...
             </h2>
 
             {news.content && (

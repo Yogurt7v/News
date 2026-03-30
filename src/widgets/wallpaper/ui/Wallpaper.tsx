@@ -8,13 +8,10 @@ export function Wallpaper({ children }: WallpaperProps) {
   return (
     <div className="relative min-h-screen">
       <div
-        className="fixed inset-0 z-0 opacity-[0.05] dark:opacity-[0.03] pointer-events-none"
+        className="fixed inset-0 z-0 pointer-events-none"
         style={{
-          backgroundImage: "url('/wallpapers/grid.svg')",
-          backgroundSize: '60px',
-          backgroundRepeat: 'repeat',
-          backgroundPosition: 'center',
-          filter: 'blur(10px)',
+          background:
+            'radial-gradient(ellipse at top, rgba(59, 130, 246, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #111827 100%)',
         }}
       />
       <div className="relative z-10">{children}</div>
