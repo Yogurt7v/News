@@ -204,6 +204,7 @@ export class TelegramParserService {
           formData.append('order', i.toString());
           formData.append('width', m.width.toString());
           formData.append('height', m.height.toString());
+          formData.append('size', fileStats.size.toString());
 
           const uint8Array = new Uint8Array(buffer);
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
@@ -267,6 +268,7 @@ export class TelegramParserService {
     limit: number = parseInt(process.env.POST_LIMIT!)
   ): Promise<number> {
     const client = await getTelegramClient();
+    await this.ensureMediaSizeLimit();
     let totalSaved = 0;
     let lastError: Error | null = null;
 
@@ -346,6 +348,89 @@ export class TelegramParserService {
     } catch (err) {
       console.error('❌ Ошибка при выполнении очистки:', err);
       return 0;
+    }
+  }
+
+  async ensureMediaSizeLimit(
+    limitMB: number = parseInt('15360')
+  ): Promise<void> {
+    const pb = await this.getPb();
+    const limit = limitMB * 1024 * 1024;
+    this.log(
+      `\n📏 [Media Limit] Проверяю лимит медиафайлов (${limitMB} МБ)...`
+    );
+    try {
+      // Получаем все медиафайлы с их размерами
+      const allMedia = await pb.collection('media').getFullList({
+        fields: 'id,size,newsId,created',
+        sort: '+created',
+      });
+      const totalSize = allMedia.reduce(
+        (sum, m) => sum + (m.size || 0),
+        0
+      );
+      const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+
+      this.log(
+        `📊 [Media Limit] Текущий размер: ${totalSizeMB} МБ (${allMedia.length} файлов)`
+      );
+      if (totalSize <= limit) {
+        this.log('✅ [Media Limit] Лимит не превышен.');
+        return;
+      }
+      this.log(
+        `⚠️ [Media Limit] Лимит превышен на ${((totalSize - limit) / 1024 / 1024).toFixed(2)} МБ. Начинаю очистку...`
+      );
+      // Группируем медиа по newsId
+      const mediaByNews = new Map<
+        string,
+        { size: number; mediaIds: string[] }
+      >();
+      for (const m of allMedia) {
+        if (!mediaByNews.has(m.newsId)) {
+          mediaByNews.set(m.newsId, { size: 0, mediaIds: [] });
+        }
+        const newsData = mediaByNews.get(m.newsId)!;
+        newsData.size += m.size || 0;
+        newsData.mediaIds.push(m.id);
+      }
+      // Получаем новости, отсортированные по дате (от старых к новым)
+      const sortedNews = await pb.collection('news').getFullList({
+        fields: 'id,publishedAt',
+        sort: '+publishedAt',
+      });
+      let freedSize = totalSize;
+      let deletedCount = 0;
+      for (const news of sortedNews) {
+        if (freedSize <= limit) break;
+        const newsMedia = mediaByNews.get(news.id);
+        if (newsMedia) {
+          // Удаляем медиафайлы новости
+          for (const mediaId of newsMedia.mediaIds) {
+            try {
+              await pb.collection('media').delete(mediaId);
+            } catch (err) {
+              console.error(`❌ Ошибка удаления медиа ${mediaId}:`, err);
+            }
+          }
+          freedSize -= newsMedia.size;
+        }
+        // Удаляем новость
+        try {
+          await pb.collection('news').delete(news.id);
+          deletedCount++;
+        } catch (err) {
+          console.error(`❌ Ошибка удаления новости ${news.id}:`, err);
+        }
+      }
+      this.log(
+        `✨ [Media Limit] Очистка завершена. Удалено новостей: ${deletedCount}`
+      );
+      this.log(
+        `📊 [Media Limit] Освобождено: ${((totalSize - freedSize) / 1024 / 1024).toFixed(2)} МБ`
+      );
+    } catch (err) {
+      console.error('❌ [Media Limit] Ошибка проверки лимита:', err);
     }
   }
 }
