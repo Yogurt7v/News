@@ -58,14 +58,14 @@ export function GroupsList({
             className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
               currentGroupId === group.id
                 ? 'bg-[#229ED9]/10 border border-[#229ED9]/20'
-                : 'hover:bg-white/60 dark:hover:bg-white/5'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                 currentGroupId === group.id
                   ? 'bg-[#229ED9]/20'
-                  : 'bg-black/5 dark:bg-white/10'
+                  : 'bg-gray-100 dark:bg-gray-800'
               }`}
             >
               <span className="text-base">📁</span>
@@ -73,7 +73,7 @@ export function GroupsList({
             {editingGroupId === group.id ? (
               <input
                 autoFocus
-                className="flex-1 bg-white/60 dark:bg-white/10 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#229ED9]/50"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#229ED9]/50"
                 value={editName}
                 onChange={(e) => onEditChange(e.target.value)}
                 onBlur={() => onEditSubmit(group.id)}
@@ -93,7 +93,7 @@ export function GroupsList({
                   e.stopPropagation();
                   onEditStart(group.id, group.name);
                 }}
-                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-xs transition-all"
+                className="w-7 h-7 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-xs transition-all"
               >
                 ✎
               </button>
@@ -102,7 +102,7 @@ export function GroupsList({
                   e.stopPropagation();
                   onDeleteClick(group.id, group.name);
                 }}
-                className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-xs transition-all text-black/40 hover:text-red-500"
+                className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-xs transition-all text-gray-400 hover:text-red-500"
               >
                 ✕
               </button>
@@ -110,12 +110,12 @@ export function GroupsList({
           </div>
 
           {currentGroupId === group.id && group.channels.length > 0 && (
-            <div className="ml-4 pl-4 border-l border-black/5 dark:border-white/5 space-y-0.5">
+            <div className="ml-4 pl-4 border-l border-gray-200 dark:border-gray-700 space-y-0.5">
               {group.channels.map((ch) => (
                 <div
                   key={ch.username}
                   onClick={(e) => onRemoveChannel(e, group.id, ch)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 text-sm text-black/60 dark:text-white/60 transition-all group-hover/ch:opacity-100"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 transition-all group-hover/ch:opacity-100"
                 >
                   <span className="truncate flex-1 text-left">
                     {ch.title}

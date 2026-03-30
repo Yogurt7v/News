@@ -15,11 +15,11 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="mb-6 animate-fade-in-up">
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 p-6 shadow-lg shadow-black/5">
+      <div className="bg-white dark:bg-gray-900 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-lg shadow-gray-200/20 dark:shadow-black/30">
         <h1 className="text-2xl font-bold text-foreground">{title}</h1>
         {statsText && (
           <p
-            className="text-sm text-black/40 dark:text-white/40 mt-1 animate-fade-in"
+            className="text-sm text-gray-500 dark:text-gray-400 mt-1 animate-fade-in"
             style={{ animationDelay: '0.1s' }}
           >
             {statsText}
@@ -27,7 +27,7 @@ export function PageHeader({
         )}
         {showHint && (
           <p
-            className="text-sm text-black/40 dark:text-white/40 mt-1 animate-fade-in"
+            className="text-sm text-gray-500 dark:text-gray-400 mt-1 animate-fade-in"
             style={{ animationDelay: '0.15s' }}
           >
             Добавьте каналы для начала чтения

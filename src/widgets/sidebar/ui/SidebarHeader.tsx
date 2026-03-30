@@ -6,7 +6,7 @@ interface SidebarHeaderProps {
 
 export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
   return (
-    <div className="p-5 border-b border-black/5 dark:border-white/5 animate-fade-in-down">
+    <div className="p-5 border-b border-gray-100 dark:border-gray-800 animate-fade-in-down">
       <div className="flex items-center justify-between">
         <div
           className="flex items-center gap-3 cursor-pointer group"
@@ -19,14 +19,14 @@ export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
             <h2 className="font-bold text-lg tracking-tight">
               Будь в курсе
             </h2>
-            <p className="text-xs text-black/40 dark:text-white/40">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Ваша лента
             </p>
           </div>
         </div>
         <button
           onClick={onAddClick}
-          className="w-11 h-11 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/20 transition-all flex items-center justify-center active:scale-95"
+          className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center active:scale-95"
         >
           <svg
             className="w-5 h-5 text-[#229ED9]"

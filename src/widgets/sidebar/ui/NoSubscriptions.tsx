@@ -9,7 +9,7 @@ export function NoSubscriptions({
 }: NoSubscriptionsProps) {
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 shadow-lg p-10 text-center">
+      <div className="bg-white dark:bg-gray-900 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-lg shadow-gray-200/20 dark:shadow-black/30 p-10 text-center">
         <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-[#229ED9]/10 backdrop-blur-sm flex items-center justify-center">
           <svg
             className="w-10 h-10 text-[#229ED9]"
@@ -30,7 +30,7 @@ export function NoSubscriptions({
           {hasSubscriptions ? 'Лента пуста' : 'Начните чтение'}
         </h3>
 
-        <p className="text-sm text-black/50 dark:text-white/50 max-w-xs mx-auto leading-relaxed">
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
           {hasSubscriptions
             ? 'Новости по вашим подпискам ещё не обработаны. Загляните позже.'
             : 'Подпишитесь на Telegram-каналы, чтобы собрать свою персональную ленту.'}

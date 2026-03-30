@@ -72,7 +72,7 @@ export function SidebarContent({
           className={`w-10 h-10 rounded-xl flex items-center justify-center ${
             !currentChannel && !currentGroupId
               ? 'bg-white/20'
-              : 'bg-black/5 dark:bg-white/10'
+              : 'bg-gray-100 dark:bg-gray-800'
           }`}
         >
           <svg
@@ -88,6 +88,19 @@ export function SidebarContent({
         </div>
         <span className="font-semibold">Все посты</span>
       </button>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-black/5 dark:via-white/5 to-transparent my-4" />
+
+      <p className="text-[11px] font-semibold tracking-wider text-black/40 dark:text-white/40 uppercase px-2 mb-3">
+        Каналы
+      </p>
+
+      <ChannelsList
+        channels={channels}
+        currentChannel={currentChannel}
+        onChannelClick={onChannelClick}
+        onUnsubscribe={onUnsubscribe}
+      />
 
       <div className="h-px bg-gradient-to-r from-transparent via-black/5 dark:via-white/5 to-transparent my-4" />
 
@@ -115,19 +128,6 @@ export function SidebarContent({
         onEditSubmit={onEditSubmit}
         onDeleteClick={onDeleteClick}
         onRemoveChannel={onRemoveChannel}
-      />
-
-      <div className="h-px bg-gradient-to-r from-transparent via-black/5 dark:via-white/5 to-transparent my-4" />
-
-      <p className="text-[11px] font-semibold tracking-wider text-black/40 dark:text-white/40 uppercase px-2 mb-3">
-        Каналы
-      </p>
-
-      <ChannelsList
-        channels={channels}
-        currentChannel={currentChannel}
-        onChannelClick={onChannelClick}
-        onUnsubscribe={onUnsubscribe}
       />
     </nav>
   );

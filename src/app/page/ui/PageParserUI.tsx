@@ -12,9 +12,9 @@ export function PageParserUI({ isAdmin }: PageParserUIProps) {
   return (
     <>
       {parserStatus === 'loading' && currentLog && (
-        <div className="mt-3 flex items-center gap-3 bg-black/5 dark:bg-white/5 rounded-2xl px-4 py-3 animate-fade-in">
+        <div className="mt-3 flex items-center gap-3 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 animate-fade-in">
           <div className="w-2 h-2 rounded-full bg-[#229ED9] animate-pulse" />
-          <p className="text-sm text-black/60 dark:text-white/60 truncate">
+          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
             {currentLog}
           </p>
         </div>
@@ -24,7 +24,7 @@ export function PageParserUI({ isAdmin }: PageParserUIProps) {
         <button
           onClick={runParser}
           disabled={parserStatus === 'loading'}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-[#229ED9]/10 hover:bg-[#229ED9]/20 dark:bg-white/5 dark:hover:bg-white/10 transition-all font-medium text-[#229ED9]"
+          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-[#229ED9]/10 hover:bg-[#229ED9]/20 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all font-medium text-[#229ED9]"
         >
           <svg
             className={`w-4 h-4 ${parserStatus === 'loading' ? 'animate-spin' : ''}`}

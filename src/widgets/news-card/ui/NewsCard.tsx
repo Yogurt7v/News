@@ -67,9 +67,9 @@ export function NewsCard({ news }: NewsCardProps) {
   return (
     <>
       <article className="animate-fade-in">
-        <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 shadow-lg shadow-black/5 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl shadow-gray-200/20 dark:shadow-black/40 overflow-hidden">
           {/* Header */}
-          <div className="px-5 py-3 flex items-center justify-between bg-white/40 dark:bg-white/5 backdrop-blur-sm border-b border-black/5 dark:border-white/5">
+          <div className="px-5 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[#229ED9]/10 flex items-center justify-center">
                 <svg
@@ -86,7 +86,7 @@ export function NewsCard({ news }: NewsCardProps) {
               </span>
             </div>
             {timeAgo && (
-              <span className="text-xs font-medium text-black/40 dark:text-white/40 px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
                 {timeAgo}
               </span>
             )}
@@ -147,7 +147,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </h2>
 
             {news.content && (
-              <p className="text-[15px] leading-relaxed text-black/60 dark:text-white/60 ">
+              <p className="text-[15px] leading-relaxed text-gray-600 dark:text-gray-400">
                 {news.content}
               </p>
             )}

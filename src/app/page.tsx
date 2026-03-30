@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
+import { Wallpaper } from '@/widgets/wallpaper/ui/Wallpaper';
 import createServerClient from '@/shared/lib/pocketbase.server';
 import { PageContent } from './page/ui/PageContent';
 
@@ -105,22 +106,22 @@ export default async function HomePage({ searchParams }: PageProps) {
   }>;
 
   return (
-    // <Wallpaper>
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 min-w-0  bg-gray-200 dark:bg-blue-950">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <PageContent
-            title={pageTitle}
-            statsText={statsText}
-            showHint={!hasSubscriptions && !channel && !group}
-            hasSubscriptions={hasSubscriptions}
-            news={newsItems}
-            isAdmin={isAdmin}
-          />
-        </div>
-      </main>
-    </div>
-    // </Wallpaper>
+    <Wallpaper>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 min-w-0">
+          <div className="max-w-2xl mx-auto px-4 py-6">
+            <PageContent
+              title={pageTitle}
+              statsText={statsText}
+              showHint={!hasSubscriptions && !channel && !group}
+              hasSubscriptions={hasSubscriptions}
+              news={newsItems}
+              isAdmin={isAdmin}
+            />
+          </div>
+        </main>
+      </div>
+    </Wallpaper>
   );
 }

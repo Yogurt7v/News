@@ -193,7 +193,7 @@ export function Sidebar() {
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-xl text-foreground">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 backdrop-blur-xl text-foreground border-r border-gray-200 dark:border-gray-800">
       <SidebarHeader onAddClick={() => setShowAddForm(true)} />
       <SidebarContent
         channels={channels}
