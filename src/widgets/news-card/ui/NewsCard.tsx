@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
 import { getMediaFileUrl } from '@/shared/lib/files';
@@ -36,6 +36,26 @@ const formatTimeAgo = (date: Date): string => {
 
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    if (videoRef.current) {
+      observer.observe(videoRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const expandedMedia = news.expand?.['media(newsId)'] as
     | Array<{
@@ -101,10 +121,12 @@ export function NewsCard({ news }: NewsCardProps) {
               {mainMedia.type === 'video' ? (
                 <div className="relative w-full h-full">
                   <video
-                    src={mainMedia.url}
+                    ref={videoRef}
+                    src={shouldLoadVideo ? mainMedia.url : undefined}
                     className="w-full h-full object-cover"
                     muted
                     playsInline
+                    preload="none"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
                     <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
