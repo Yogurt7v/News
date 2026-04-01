@@ -24,3 +24,11 @@ export function getMediaFileUrl(
   }
   return `/api/files/media/${recordId}/${media.file}`;
 }
+
+export function getAvatarUrl(
+  subscriptionId: string,
+  avatarFilename: string
+): string {
+  if (!avatarFilename) return '';
+  return `/api/files/subscriptions/${subscriptionId}/${avatarFilename}`;
+}

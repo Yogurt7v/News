@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ChannelInfo {
+  id: string;
   username: string;
   title: string;
+  avatar?: string;
 }
 
 interface CreateGroupModalProps {

@@ -4,8 +4,10 @@ import { ChannelsList } from './ChannelsList';
 import { GroupsList } from './GroupsList';
 
 interface ChannelInfo {
+  id: string;
   username: string;
   title: string;
+  avatar?: string;
 }
 
 interface GroupWithChannels {

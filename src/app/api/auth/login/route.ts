@@ -19,19 +19,23 @@ export async function POST(request: Request) {
       process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
     );
 
-    const authData = await pb.collection('users').authWithPassword(
-      email,
-      password
-    );
+    const authData = await pb
+      .collection('users')
+      .authWithPassword(email, password);
 
-    const res = NextResponse.json({ user: authData.record }, { status: 200 });
+    const res = NextResponse.json(
+      { user: authData.record },
+      { status: 200 }
+    );
     res.headers.set(
       'Set-Cookie',
       pb.authStore.exportToCookie({
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
+        sameSite: 'strict',
         path: '/',
+        domain: '.be-informed.ru',
+        maxAge: 60 * 60 * 24 * 7,
       })
     );
     return res;
@@ -42,4 +46,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

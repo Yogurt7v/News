@@ -21,8 +21,10 @@ import { SidebarController } from './SidebarController';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 interface ChannelInfo {
+  id: string;
   username: string;
   title: string;
+  avatar?: string;
 }
 
 interface GroupWithChannels {

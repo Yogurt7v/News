@@ -1,8 +1,10 @@
 'use client';
 
 interface ChannelInfo {
+  id: string;
   username: string;
   title: string;
+  avatar?: string;
 }
 
 interface GroupWithChannels {

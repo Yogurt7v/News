@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache';
 import createServerClient from '@/shared/lib/pocketbase.server';
 
 interface ChannelInfo {
+  id: string;
   username: string;
   title: string;
+  avatar?: string;
 }
 
 interface GroupWithChannels {
@@ -87,8 +89,10 @@ export async function getUserSubscriptions(): Promise<ChannelInfo[]> {
     sort: 'channelTitle',
   });
   return records.map((r) => ({
+    id: r.id,
     username: r.channelUsername,
     title: r.channelTitle || r.channelUsername,
+    avatar: r.avatar || undefined,
   }));
 }
 
@@ -118,9 +122,9 @@ export async function getUserGroups(): Promise<GroupWithChannels[]> {
     const channels: ChannelInfo[] = rawChannels.map(
       (ch: string | ChannelInfo) => {
         if (typeof ch === 'string') {
-          return { username: ch, title: ch };
+          return { id: '', username: ch, title: ch };
         }
-        return ch as ChannelInfo;
+        return { ...(ch as ChannelInfo), id: '' };
       }
     );
     return {
@@ -148,7 +152,7 @@ export async function addChannelToGroup(
   const channels: ChannelInfo[] = rawChannels.map(
     (ch: string | ChannelInfo) => {
       if (typeof ch === 'string') {
-        return { username: ch, title: ch };
+        return { id: '', username: ch, title: ch };
       }
       return ch as ChannelInfo;
     }
@@ -157,6 +161,7 @@ export async function addChannelToGroup(
   const exists = channels.some((ch) => ch.username === cleanUsername);
   if (!exists) {
     channels.push({
+      id: '',
       username: cleanUsername,
       title: channelTitle || cleanUsername,
     });
@@ -181,7 +186,7 @@ export async function removeChannelFromGroup(
   const channels: ChannelInfo[] = rawChannels
     .map((ch: string | ChannelInfo) => {
       if (typeof ch === 'string') {
-        return { username: ch, title: ch };
+        return { id: '', username: ch, title: ch };
       }
       return ch as ChannelInfo;
     })

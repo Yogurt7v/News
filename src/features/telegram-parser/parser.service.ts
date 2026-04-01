@@ -354,6 +354,9 @@ export class TelegramParserService {
 
     for (const channel of channels) {
       try {
+        this.log(`\n🔄 [${channel}] Обновляю аватарку канала...`);
+        await this.updateChannelAvatar(client, channel);
+
         const posts = await this.withRetry(
           () => this.getChannelPosts(client, channel, limit),
           3,
@@ -376,6 +379,63 @@ export class TelegramParserService {
     }
 
     return totalSaved;
+  }
+
+  private async updateChannelAvatar(
+    client: TelegramClient,
+    channelUsername: string
+  ): Promise<void> {
+    const username = channelUsername.replace('@', '');
+    const pb = await this.getPb();
+
+    try {
+      const chat = await client.getChat(username);
+      const photo = chat.photo;
+
+      if (!photo) {
+        this.log(`   ℹ️ У канала нет аватарки`);
+        return;
+      }
+
+      this.log(`   ⬇️ Скачиваю аватарку...`);
+      const photoToDownload = photo.big || photo.small;
+      const tempPath = path.join(os.tmpdir(), `avatar_${username}.jpg`);
+
+      await client.downloadToFile(tempPath, photoToDownload);
+
+      const optimizedBuffer = await this.compressImage(tempPath);
+      await fs.unlink(tempPath).catch(() => {});
+
+      const subscriptions = await pb
+        .collection('subscriptions')
+        .getFullList({
+          filter: `channelUsername = "${username}"`,
+          fields: 'id',
+        });
+
+      if (subscriptions.length === 0) {
+        this.log(`   ℹ️ Нет подписок для @${username}`);
+        return;
+      }
+
+      const formData = new FormData();
+      const uint8Array = new Uint8Array(optimizedBuffer);
+      const fileObj = new Blob([uint8Array], { type: 'image/webp' });
+      formData.append('avatar', fileObj, `avatar_${username}.webp`);
+
+      for (const sub of subscriptions) {
+        await pb.collection('subscriptions').update(sub.id, formData);
+      }
+
+      this.log(
+        `   ✅ Аватарка обновлена для ${subscriptions.length} подписки(ек)`
+      );
+    } catch (err) {
+      console.error(
+        `   ❌ Ошибка обновления аватарки для ${username}:`,
+        err
+      );
+    }
   }
 
   /**
