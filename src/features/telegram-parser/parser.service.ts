@@ -5,11 +5,15 @@ import path from 'path';
 import os from 'os';
 import type Client from 'pocketbase';
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
+import sharp from 'sharp';
+import ffmpeg from 'fluent-ffmpeg';
 
 export interface TelegramPostMedia {
   type: 'photo' | 'video' | 'document';
   fileId: string;
   tempPath: string;
+  thumbnailPath?: string;
+  optimizedBuffer?: Buffer;
   mimeType: string;
   fileName: string;
   width: number;
@@ -145,21 +149,80 @@ export class TelegramParserService {
 
       await client.downloadToFile(tmpPath, m);
 
-      this.log(`✅\n`); // Завершаем строку лога после скачивания
+      this.log(`✅ Сжатие... `);
+
+      let optimizedBuffer: Buffer;
+      let thumbnailPath: string | undefined;
+
+      if (type === 'photo') {
+        optimizedBuffer = await this.compressImage(tmpPath);
+      } else if (type === 'video') {
+        const result = await this.compressVideo(tmpPath, m.fileId);
+        optimizedBuffer = result.videoBuffer;
+        thumbnailPath = result.thumbnailPath;
+      } else {
+        optimizedBuffer = await fs.readFile(tmpPath);
+      }
+
+      await fs.unlink(tmpPath).catch(() => {});
+      this.log(`✅ Готово\n`);
 
       return {
         type,
         fileId: m.fileId,
         tempPath: tmpPath,
-        mimeType: mime || (type === 'video' ? 'video/mp4' : 'image/jpeg'),
-        fileName,
+        thumbnailPath,
+        mimeType: type === 'video' ? 'video/mp4' : 'image/webp',
+        fileName: type === 'video' ? fileName : `${m.fileId}.webp`,
         width: m.width || 0,
         height: m.height || 0,
-      };
+        optimizedBuffer,
+      } as TelegramPostMedia & { optimizedBuffer: Buffer };
     } catch (e) {
       console.error(`\n❌ Ошибка скачивания ${m.fileId}:`, e);
       return null;
     }
+  }
+
+  private async compressImage(filePath: string): Promise<Buffer> {
+    return sharp(filePath)
+      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer();
+  }
+
+  private async compressVideo(
+    filePath: string,
+    fileId: string
+  ): Promise<{ videoBuffer: Buffer; thumbnailPath: string }> {
+    const thumbnailPath = path.join(os.tmpdir(), `${fileId}_thumb.jpg`);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(filePath)
+        .videoCodec('libx264')
+        .size('1280x720')
+        .videoBitrate('1500k')
+        .format('mp4')
+        .outputOptions(['-movflags +faststart'])
+        .on('end', () => resolve())
+        .on('error', (err) => reject(err))
+        .save(filePath);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(filePath)
+        .screenshots({
+          timestamps: ['00:00:01'],
+          filename: `${fileId}_thumb.jpg`,
+          folder: os.tmpdir(),
+          size: '640x360',
+        })
+        .on('end', () => resolve())
+        .on('error', (err) => reject(err));
+    });
+
+    const videoBuffer = await fs.readFile(filePath);
+    return { videoBuffer, thumbnailPath };
   }
 
   async saveNews(post: TelegramPost): Promise<boolean> {
@@ -191,12 +254,13 @@ export class TelegramParserService {
         for (let i = 0; i < post.media.length; i++) {
           const m = post.media[i];
 
-          const fileStats = await fs.stat(m.tempPath);
+          const buffer =
+            m.optimizedBuffer || (await fs.readFile(m.tempPath));
+          const fileSize = buffer.length;
           this.log(
-            `      📄 Размер файла: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`
+            `      📄 Размер файла: ${(fileSize / 1024 / 1024).toFixed(2)} MB`
           );
 
-          const buffer = await fs.readFile(m.tempPath);
           const formData = new FormData();
 
           formData.append('newsId', newsRecord.id);
@@ -204,16 +268,32 @@ export class TelegramParserService {
           formData.append('order', i.toString());
           formData.append('width', m.width.toString());
           formData.append('height', m.height.toString());
-          formData.append('size', fileStats.size.toString());
+          formData.append('size', fileSize.toString());
 
           const uint8Array = new Uint8Array(buffer);
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
+          if (m.thumbnailPath) {
+            const thumbBuffer = await fs.readFile(m.thumbnailPath);
+            const thumbArray = new Uint8Array(thumbBuffer);
+            const thumbObj = new Blob([thumbArray], {
+              type: 'image/jpeg',
+            });
+            formData.append(
+              'thumbnail',
+              thumbObj,
+              `${m.fileId}_thumb.jpg`
+            );
+          }
+
           await pb
             .collection('media')
             .create(formData, { requestKey: null });
           await fs.unlink(m.tempPath).catch(() => {});
+          if (m.thumbnailPath) {
+            await fs.unlink(m.thumbnailPath).catch(() => {});
+          }
           this.log(
             `      [${i + 1}/${post.media.length}] Файл загружен и удален из tmp\n`
           );

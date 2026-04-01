@@ -18,6 +18,7 @@ interface NewsCardProps {
     media?: Array<{
       type: string;
       file: string;
+      thumbnail?: string;
       order?: number;
       id: string;
     }>;
@@ -61,20 +62,28 @@ export function NewsCard({ news }: NewsCardProps) {
     | Array<{
         type: string;
         file: string;
+        thumbnail?: string;
       }>
     | undefined;
 
-  let mediaItems: { type: string; url: string }[] = [];
+  let mediaItems: { type: string; url: string; thumbnailUrl?: string }[] =
+    [];
 
   if (news.media && Array.isArray(news.media)) {
     mediaItems = news.media.map((m) => ({
       type: m.type,
       url: getMediaFileUrl(m),
+      thumbnailUrl: m.thumbnail
+        ? getMediaFileUrl({ ...m, file: m.thumbnail })
+        : undefined,
     }));
   } else if (Array.isArray(expandedMedia)) {
     mediaItems = expandedMedia.map((m) => ({
       type: m.type,
       url: getMediaFileUrl(m),
+      thumbnailUrl: m.thumbnail
+        ? getMediaFileUrl({ ...m, file: m.thumbnail })
+        : undefined,
     }));
   }
 
@@ -120,25 +129,50 @@ export function NewsCard({ news }: NewsCardProps) {
             >
               {mainMedia.type === 'video' ? (
                 <div className="relative w-full h-full">
-                  <video
-                    ref={videoRef}
-                    src={shouldLoadVideo ? mainMedia.url : undefined}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                    preload="none"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                    <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                      <svg
-                        className="w-7 h-7 text-[#229ED9] ml-1"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-                  </div>
+                  {mainMedia.thumbnailUrl ? (
+                    <>
+                      <Image
+                        src={mainMedia.thumbnailUrl}
+                        alt="Video thumbnail"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                        <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                          <svg
+                            className="w-7 h-7 text-[#229ED9] ml-1"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <video
+                        ref={videoRef}
+                        src={shouldLoadVideo ? mainMedia.url : undefined}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="none"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                        <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                          <svg
+                            className="w-7 h-7 text-[#229ED9] ml-1"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <Image
