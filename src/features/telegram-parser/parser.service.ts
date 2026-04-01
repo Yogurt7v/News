@@ -5,24 +5,16 @@ import path from 'path';
 import os from 'os';
 import type Client from 'pocketbase';
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
-import sharp from 'sharp';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
-}
 
 export interface TelegramPostMedia {
   type: 'photo' | 'video' | 'document';
   fileId: string;
   tempPath: string;
-  thumbnailPath?: string;
-  optimizedBuffer?: Buffer;
   mimeType: string;
   fileName: string;
   width: number;
   height: number;
+  fileBuffer?: Buffer;
 }
 
 export interface TelegramPost {
@@ -154,25 +146,7 @@ export class TelegramParserService {
 
       await client.downloadToFile(tmpPath, m);
 
-      let optimizedBuffer: Buffer;
-      let thumbnailPath: string | undefined;
-
-      try {
-        if (type === 'photo') {
-          this.log(`✅ Сжатие... `);
-          optimizedBuffer = await this.compressImage(tmpPath);
-        } else if (type === 'video') {
-          this.log(`✅ Сжатие... `);
-          const result = await this.compressVideo(tmpPath, m.fileId);
-          optimizedBuffer = result.videoBuffer;
-          thumbnailPath = result.thumbnailPath;
-        } else {
-          optimizedBuffer = await fs.readFile(tmpPath);
-        }
-      } catch (compressError) {
-        this.log(`⚠️ Сжатие не удалось, сохраняю оригинал\n`);
-        optimizedBuffer = await fs.readFile(tmpPath);
-      }
+      const fileBuffer = await fs.readFile(tmpPath);
 
       await fs.unlink(tmpPath).catch(() => {});
       this.log(`✅ Готово\n`);
@@ -181,70 +155,15 @@ export class TelegramParserService {
         type,
         fileId: m.fileId,
         tempPath: tmpPath,
-        thumbnailPath,
-        mimeType: type === 'video' ? 'video/mp4' : 'image/webp',
-        fileName: type === 'video' ? fileName : `${m.fileId}.webp`,
+        mimeType: type === 'video' ? 'video/mp4' : 'image/jpeg',
+        fileName: fileName,
         width: m.width || 0,
         height: m.height || 0,
-        optimizedBuffer,
-      } as TelegramPostMedia & { optimizedBuffer: Buffer };
+        fileBuffer,
+      } as TelegramPostMedia & { fileBuffer: Buffer };
     } catch (e) {
       console.error(`\n❌ Ошибка скачивания ${m.fileId}:`, e);
       return null;
-    }
-  }
-
-  private async compressImage(filePath: string): Promise<Buffer> {
-    try {
-      return await sharp(filePath)
-        .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toBuffer();
-    } catch (e) {
-      this.log(`⚠️ Sharp не удалось сжать, сохраняю оригинал`);
-      return await fs.readFile(filePath);
-    }
-  }
-
-  private async compressVideo(
-    filePath: string,
-    fileId: string
-  ): Promise<{ videoBuffer: Buffer; thumbnailPath?: string }> {
-    const thumbnailPath = path.join(os.tmpdir(), `${fileId}_thumb.jpg`);
-
-    try {
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(filePath)
-          .videoCodec('libx264')
-          .size('1280x720')
-          .videoBitrate('1500k')
-          .format('mp4')
-          .outputOptions(['-movflags +faststart'])
-          .on('end', () => resolve())
-          .on('error', (err) => reject(err))
-          .save(filePath);
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(filePath)
-          .screenshots({
-            timestamps: ['00:00:01'],
-            filename: `${fileId}_thumb.jpg`,
-            folder: os.tmpdir(),
-            size: '640x360',
-          })
-          .on('end', () => resolve())
-          .on('error', (err) => reject(err));
-      });
-
-      const videoBuffer = await fs.readFile(filePath);
-      return { videoBuffer, thumbnailPath };
-    } catch (e) {
-      this.log(
-        `⚠️ FFmpeg не найден или не работает, сохраняю оригинал видео`
-      );
-      const videoBuffer = await fs.readFile(filePath);
-      return { videoBuffer, thumbnailPath: undefined };
     }
   }
 
@@ -277,8 +196,7 @@ export class TelegramParserService {
         for (let i = 0; i < post.media.length; i++) {
           const m = post.media[i];
 
-          const buffer =
-            m.optimizedBuffer || (await fs.readFile(m.tempPath));
+          const buffer = m.fileBuffer || (await fs.readFile(m.tempPath));
           const fileSize = buffer.length;
           this.log(
             `      📄 Размер файла: ${(fileSize / 1024 / 1024).toFixed(2)} MB`
@@ -297,26 +215,10 @@ export class TelegramParserService {
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
-          if (m.thumbnailPath) {
-            const thumbBuffer = await fs.readFile(m.thumbnailPath);
-            const thumbArray = new Uint8Array(thumbBuffer);
-            const thumbObj = new Blob([thumbArray], {
-              type: 'image/jpeg',
-            });
-            formData.append(
-              'thumbnail',
-              thumbObj,
-              `${m.fileId}_thumb.jpg`
-            );
-          }
-
           await pb
             .collection('media')
             .create(formData, { requestKey: null });
           await fs.unlink(m.tempPath).catch(() => {});
-          if (m.thumbnailPath) {
-            await fs.unlink(m.thumbnailPath).catch(() => {});
-          }
           this.log(
             `      [${i + 1}/${post.media.length}] Файл загружен и удален из tmp\n`
           );
@@ -433,7 +335,7 @@ export class TelegramParserService {
 
       await client.downloadToFile(tempPath, photoToDownload);
 
-      const optimizedBuffer = await this.compressImage(tempPath);
+      const fileBuffer = await fs.readFile(tempPath);
       await fs.unlink(tempPath).catch(() => {});
 
       const subscriptions = await pb
@@ -449,9 +351,9 @@ export class TelegramParserService {
       }
 
       const formData = new FormData();
-      const uint8Array = new Uint8Array(optimizedBuffer);
-      const fileObj = new Blob([uint8Array], { type: 'image/webp' });
-      formData.append('avatar', fileObj, `avatar_${username}.webp`);
+      const uint8Array = new Uint8Array(fileBuffer);
+      const fileObj = new Blob([uint8Array], { type: 'image/jpeg' });
+      formData.append('avatar', fileObj, `avatar_${username}.jpg`);
 
       for (const sub of subscriptions) {
         await pb.collection('subscriptions').update(sub.id, formData);
