@@ -187,6 +187,7 @@ export class TelegramParserService {
           post.message.split('\n')[0].slice(0, 120) || 'Новость из TG',
         content: post.message,
         source: `@${post.channelUsername}`,
+        channelTitle: post.channelTitle,
         url: newsUrl,
         publishedAt: post.date.toISOString(),
       });
@@ -280,13 +281,18 @@ export class TelegramParserService {
     for (const channel of channels) {
       try {
         this.log(`\n🔄 [${channel}] Обновляю аватарку канала...`);
-        await this.updateChannelAvatar(client, channel);
 
+        // Сначала получаем посты чтобы достать peerId
         const posts = await this.withRetry(
           () => this.getChannelPosts(client, channel, limit),
           3,
           2000
         );
+
+        // Обновляем аватарку с использованием peerId из первого поста
+        const peerId = posts.length > 0 ? posts[0].peerId : undefined;
+        await this.updateChannelAvatar(client, channel, peerId);
+
         for (const post of posts) {
           if (await this.saveNews(post)) {
             totalSaved++;
@@ -308,66 +314,127 @@ export class TelegramParserService {
 
   private async updateChannelAvatar(
     client: TelegramClient,
-    channelUsername: string
+    channelUsername: string,
+    peerId?: string
   ): Promise<void> {
     const username = channelUsername.replace('@', '');
     const pb = await this.getPb();
 
-    // Если username не является стандартным (начинается с @ и содержит только латиницу)
-    // или это русское название - пропускаем обновление аватарки
-    if (!username || /^[0-9]/.test(username) || username.length < 3) {
-      this.log(`   ℹ️ Пропускаю аватарку (не найден username)`);
-      return;
+    // Если есть валидный username - пробуем по нему
+    if (
+      username &&
+      /^[a-zA-Z0-9_]+$/.test(username) &&
+      username.length >= 3
+    ) {
+      try {
+        const chat = await client.getChat(username);
+        const photo = chat.photo;
+
+        if (!photo) {
+          this.log(`   ℹ️ У канала нет аватарки`);
+          return;
+        }
+
+        this.log(`   ⬇️ Скачиваю аватарку...`);
+        const photoToDownload = photo.big || photo.small;
+        const tempPath = path.join(os.tmpdir(), `avatar_${username}.jpg`);
+
+        await client.downloadToFile(tempPath, photoToDownload);
+
+        const fileBuffer = await fs.readFile(tempPath);
+        await fs.unlink(tempPath).catch(() => {});
+
+        const subscriptions = await pb
+          .collection('subscriptions')
+          .getFullList({
+            filter: `channelUsername = "${username}"`,
+            fields: 'id',
+          });
+
+        if (subscriptions.length === 0) {
+          this.log(`   ℹ️ Нет подписок для @${username}`);
+          return;
+        }
+
+        const formData = new FormData();
+        const uint8Array = new Uint8Array(fileBuffer);
+        const fileObj = new Blob([uint8Array], { type: 'image/jpeg' });
+        formData.append('avatar', fileObj, `avatar_${username}.jpg`);
+
+        for (const sub of subscriptions) {
+          await pb.collection('subscriptions').update(sub.id, formData);
+        }
+
+        this.log(
+          `   ✅ Аватарка обновлена для ${subscriptions.length} подписки(ек)`
+        );
+        return;
+      } catch (e) {
+        // Продолжаем - попробуем другие способы
+      }
     }
 
-    try {
-      const chat = await client.getChat(username);
-      const photo = chat.photo;
-
-      if (!photo) {
-        this.log(`   ℹ️ У канала нет аватарки`);
-        return;
-      }
-
-      this.log(`   ⬇️ Скачиваю аватарку...`);
-      const photoToDownload = photo.big || photo.small;
-      const tempPath = path.join(os.tmpdir(), `avatar_${username}.jpg`);
-
-      await client.downloadToFile(tempPath, photoToDownload);
-
-      const fileBuffer = await fs.readFile(tempPath);
-      await fs.unlink(tempPath).catch(() => {});
-
-      const subscriptions = await pb
-        .collection('subscriptions')
-        .getFullList({
-          filter: `channelUsername = "${username}"`,
-          fields: 'id',
+    // Для каналов без username (русские названия) - пробуем использовать peerId
+    if (peerId) {
+      try {
+        // Пробуем через getHistory - получаем любое сообщение из канала
+        // Это даст нам объект чата с информацией
+        const messages = await client.getHistory(username || peerId, {
+          limit: 1,
         });
+        if (messages.length > 0 && messages[0].chat) {
+          const chat = messages[0].chat;
+          const photo = chat.photo;
 
-      if (subscriptions.length === 0) {
-        this.log(`   ℹ️ Нет подписок для @${username}`);
-        return;
+          if (photo) {
+            this.log(`   ⬇️ Скачиваю аватарку по peerId...`);
+            const photoToDownload = photo.big || photo.small;
+            const tempPath = path.join(
+              os.tmpdir(),
+              `avatar_by_id_${peerId}.jpg`
+            );
+
+            await client.downloadToFile(tempPath, photoToDownload);
+
+            const fileBuffer = await fs.readFile(tempPath);
+            await fs.unlink(tempPath).catch(() => {});
+
+            // Обновляем все подписки где channelUsername совпадает с peerId
+            const subscriptions = await pb
+              .collection('subscriptions')
+              .getFullList({
+                filter: `channelUsername = "${peerId}"`,
+                fields: 'id',
+              });
+
+            if (subscriptions.length > 0) {
+              const formData = new FormData();
+              const uint8Array = new Uint8Array(fileBuffer);
+              const fileObj = new Blob([uint8Array], {
+                type: 'image/jpeg',
+              });
+              formData.append('avatar', fileObj, `avatar_${peerId}.jpg`);
+
+              for (const sub of subscriptions) {
+                await pb
+                  .collection('subscriptions')
+                  .update(sub.id, formData);
+              }
+              this.log(
+                `   ✅ Аватарка обновлена для ${subscriptions.length} подписки(ек)`
+              );
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        this.log(
+          `   ℹ️ Не удалось получить аватарку по peerId: ${e instanceof Error ? e.message : 'unknown'}`
+        );
       }
-
-      const formData = new FormData();
-      const uint8Array = new Uint8Array(fileBuffer);
-      const fileObj = new Blob([uint8Array], { type: 'image/jpeg' });
-      formData.append('avatar', fileObj, `avatar_${username}.jpg`);
-
-      for (const sub of subscriptions) {
-        await pb.collection('subscriptions').update(sub.id, formData);
-      }
-
-      this.log(
-        `   ✅ Аватарка обновлена для ${subscriptions.length} подписки(ек)`
-      );
-    } catch (err) {
-      console.error(
-        `   ❌ Ошибка обновления аватарки для ${username}:`,
-        err
-      );
     }
+
+    this.log(`   ℹ️ Пропускаю аватарку (нет валидного username)`);
   }
 
   /**

@@ -11,6 +11,7 @@ interface NewsCardProps {
     title: string;
     content: string;
     source: string;
+    channelTitle?: string;
     url: string;
     imageUrl?: string;
     publishedAt?: string;
@@ -93,6 +94,8 @@ export function NewsCard({ news }: NewsCardProps) {
     : null;
   const timeAgo = publishedDate ? formatTimeAgo(publishedDate) : '';
 
+  console.log(news);
+
   return (
     <>
       <article className="animate-fade-in">
@@ -111,7 +114,9 @@ export function NewsCard({ news }: NewsCardProps) {
                 </svg>
               </div>
               <span className="text-sm font-semibold text-[#229ED9]">
-                @{news.source.replace('@', '')}
+                {news.channelTitle!.length > 0
+                  ? news.channelTitle
+                  : news.source}
               </span>
             </div>
             {timeAgo && (
