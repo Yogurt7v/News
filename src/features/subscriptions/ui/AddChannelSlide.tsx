@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { subscribeToChannel } from '@/features/subscriptions/actions.pb';
 import { useDebounce } from '@/shared/lib/useDebounce';
 
@@ -82,6 +83,9 @@ export function AddChannelSlide({
   const [suggestions, setSuggestions] = useState<ChannelResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedChannel, setSelectedChannel] =
+    useState<ChannelResult | null>(null);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const debouncedQuery = useDebounce(query, 400);
 
   useEffect(() => {
@@ -96,6 +100,7 @@ export function AddChannelSlide({
       setSelectedTitle('');
       setSuggestions([]);
       setError(null);
+      setSelectedChannel(null);
     }
   }, [isOpen]);
 
@@ -134,18 +139,43 @@ export function AddChannelSlide({
       setQuery('');
       setSelectedTitle('');
       setSuggestions([]);
+      setSelectedChannel(null);
       onSuccess?.();
       onClose();
     }
   }, [state, onSuccess, onClose]);
 
   const handleSelect = (item: ChannelResult) => {
-    const username = item.username || item.title;
-    setQuery(username);
+    setSelectedChannel(item);
     setSelectedTitle(item.title);
-    setSuggestions([]);
+    setError(null);
+  };
+
+  const handleSubscribe = async () => {
+    if (!selectedChannel) return;
+
+    setIsSubscribing(true);
+    setError(null);
+
+    try {
+      const username = selectedChannel.username || selectedChannel.title;
+      await subscribeToChannel(username, selectedChannel.title);
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Ошибка подписки';
+      setError(message);
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedChannel(null);
+    setError(null);
     if (inputRef.current) {
-      inputRef.current.value = username;
+      inputRef.current.focus();
     }
   };
 
@@ -348,8 +378,7 @@ export function AddChannelSlide({
                       Безопасность
                     </p>
                     <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 leading-relaxed">
-                      Мы не храним ваши данные. Подписки синхронизируются с
-                      вашим аккаунтом.
+                      Подписки синхронизируются с вашим аккаунтом.
                     </p>
                   </div>
                 </div>
@@ -357,43 +386,93 @@ export function AddChannelSlide({
             </div>
 
             <div className="p-6 border-t border-black/5 dark:border-white/10 space-y-3">
-              {state?.error && (
-                <p className="text-sm text-red-500 text-center font-medium">
-                  {state.error}
-                </p>
+              {selectedChannel ? (
+                <div className="space-y-4">
+                  <div className="p-5 rounded-2xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
+                        <TypeIcon type={selectedChannel.type} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">
+                          {selectedChannel.title}
+                        </p>
+                        <p className="text-sm text-black/40 dark:text-white/40">
+                          @{selectedChannel.username || 'без username'}
+                        </p>
+                        <p className="text-xs text-black/30 dark:text-white/30 mt-1">
+                          {formatCount(selectedChannel.participantsCount)}{' '}
+                          участников
+                        </p>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <p className="text-sm text-red-500 text-center font-medium mb-3">
+                        {error}
+                      </p>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSubscribe}
+                        disabled={isSubscribing}
+                        className="flex-1 py-3 rounded-xl bg-[#229ED9] hover:bg-[#1b8ec2] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all"
+                      >
+                        {isSubscribing ? 'Подписка...' : 'Подписаться'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        className="px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-foreground font-medium transition-all"
+                      >
+                        Назад
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {state?.error && (
+                    <p className="text-sm text-red-500 text-center font-medium">
+                      {state.error}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isPending || !query}
+                    className="w-full py-4 rounded-2xl bg-[#229ED9] hover:bg-[#1b8ec2] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-[#229ED9]/25 active:scale-[0.98]"
+                  >
+                    {isPending ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg
+                          className="w-5 h-5 animate-spin"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Добавление...
+                      </span>
+                    ) : (
+                      'Добавить канал'
+                    )}
+                  </button>
+                </>
               )}
-              <button
-                type="submit"
-                disabled={isPending || !query}
-                className="w-full py-4 rounded-2xl bg-[#229ED9] hover:bg-[#1b8ec2] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-[#229ED9]/25 active:scale-[0.98]"
-              >
-                {isPending ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="w-5 h-5 animate-spin"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Добавление...
-                  </span>
-                ) : (
-                  'Добавить канал'
-                )}
-              </button>
             </div>
           </form>
         </div>

@@ -12,7 +12,7 @@ export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => (window.location.href = '/')}
         >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1b8ec2] flex items-center justify-center text-white shadow-lg shadow-[#229ED9]/30 group-hover:shadow-xl group-hover:shadow-[#229ED9]/40 transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1b8ec2] flex items-center justify-center text-white shadow-lg  group-hover:shadow-xl group-hover:shadow-[#229ED9]/40 transition-all">
             <span className="text-xl font-bold">N</span>
           </div>
           <div>

@@ -7,6 +7,11 @@ import type Client from 'pocketbase';
 import { createAdminClient } from '@/shared/lib/pocketbase-admin';
 import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+}
 
 export interface TelegramPostMedia {
   type: 'photo' | 'video' | 'document';
@@ -149,18 +154,23 @@ export class TelegramParserService {
 
       await client.downloadToFile(tmpPath, m);
 
-      this.log(`✅ Сжатие... `);
-
       let optimizedBuffer: Buffer;
       let thumbnailPath: string | undefined;
 
-      if (type === 'photo') {
-        optimizedBuffer = await this.compressImage(tmpPath);
-      } else if (type === 'video') {
-        const result = await this.compressVideo(tmpPath, m.fileId);
-        optimizedBuffer = result.videoBuffer;
-        thumbnailPath = result.thumbnailPath;
-      } else {
+      try {
+        if (type === 'photo') {
+          this.log(`✅ Сжатие... `);
+          optimizedBuffer = await this.compressImage(tmpPath);
+        } else if (type === 'video') {
+          this.log(`✅ Сжатие... `);
+          const result = await this.compressVideo(tmpPath, m.fileId);
+          optimizedBuffer = result.videoBuffer;
+          thumbnailPath = result.thumbnailPath;
+        } else {
+          optimizedBuffer = await fs.readFile(tmpPath);
+        }
+      } catch (compressError) {
+        this.log(`⚠️ Сжатие не удалось, сохраняю оригинал\n`);
         optimizedBuffer = await fs.readFile(tmpPath);
       }
 
@@ -185,44 +195,57 @@ export class TelegramParserService {
   }
 
   private async compressImage(filePath: string): Promise<Buffer> {
-    return sharp(filePath)
-      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer();
+    try {
+      return await sharp(filePath)
+        .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+    } catch (e) {
+      this.log(`⚠️ Sharp не удалось сжать, сохраняю оригинал`);
+      return await fs.readFile(filePath);
+    }
   }
 
   private async compressVideo(
     filePath: string,
     fileId: string
-  ): Promise<{ videoBuffer: Buffer; thumbnailPath: string }> {
+  ): Promise<{ videoBuffer: Buffer; thumbnailPath?: string }> {
     const thumbnailPath = path.join(os.tmpdir(), `${fileId}_thumb.jpg`);
 
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(filePath)
-        .videoCodec('libx264')
-        .size('1280x720')
-        .videoBitrate('1500k')
-        .format('mp4')
-        .outputOptions(['-movflags +faststart'])
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
-        .save(filePath);
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(filePath)
+          .videoCodec('libx264')
+          .size('1280x720')
+          .videoBitrate('1500k')
+          .format('mp4')
+          .outputOptions(['-movflags +faststart'])
+          .on('end', () => resolve())
+          .on('error', (err) => reject(err))
+          .save(filePath);
+      });
 
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(filePath)
-        .screenshots({
-          timestamps: ['00:00:01'],
-          filename: `${fileId}_thumb.jpg`,
-          folder: os.tmpdir(),
-          size: '640x360',
-        })
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err));
-    });
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(filePath)
+          .screenshots({
+            timestamps: ['00:00:01'],
+            filename: `${fileId}_thumb.jpg`,
+            folder: os.tmpdir(),
+            size: '640x360',
+          })
+          .on('end', () => resolve())
+          .on('error', (err) => reject(err));
+      });
 
-    const videoBuffer = await fs.readFile(filePath);
-    return { videoBuffer, thumbnailPath };
+      const videoBuffer = await fs.readFile(filePath);
+      return { videoBuffer, thumbnailPath };
+    } catch (e) {
+      this.log(
+        `⚠️ FFmpeg не найден или не работает, сохраняю оригинал видео`
+      );
+      const videoBuffer = await fs.readFile(filePath);
+      return { videoBuffer, thumbnailPath: undefined };
+    }
   }
 
   async saveNews(post: TelegramPost): Promise<boolean> {
@@ -387,6 +410,13 @@ export class TelegramParserService {
   ): Promise<void> {
     const username = channelUsername.replace('@', '');
     const pb = await this.getPb();
+
+    // Если username не является стандартным (начинается с @ и содержит только латиницу)
+    // или это русское название - пропускаем обновление аватарки
+    if (!username || /^[0-9]/.test(username) || username.length < 3) {
+      this.log(`   ℹ️ Пропускаю аватарку (не найден username)`);
+      return;
+    }
 
     try {
       const chat = await client.getChat(username);

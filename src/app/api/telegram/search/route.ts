@@ -9,19 +9,33 @@ interface SearchResult {
   isPrivate: boolean;
 }
 
-interface ChatLike {
-  _: string;
-  id: string | number;
-  title?: string;
-  username?: string | null;
-  participantsCount?: number | null;
-}
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
 
-function isChannelOrGroup(chat: unknown): chat is ChatLike {
-  const c = chat as ChatLike;
-  return (
-    c && typeof c === 'object' && (c._ === 'channel' || c._ === 'chat')
-  );
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (e: unknown) {
+      lastError = e instanceof Error ? e : new Error('Unknown error');
+
+      const isNetworkError =
+        lastError.message.includes('ECONNRESET') ||
+        lastError.message.includes('ETIMEDOUT') ||
+        lastError.message.includes('ECONNREFUSED');
+
+      if (isNetworkError && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else if (attempt === maxRetries) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export async function GET(request: Request) {
@@ -33,35 +47,42 @@ export async function GET(request: Request) {
   try {
     const client = await getTelegramClient();
 
-    // Глобальный поиск через contacts.search
-    const result = await client.call({
-      _: 'contacts.search',
-      q: q.trim(),
-      limit: 10,
-    });
+    const searchQuery = q.replace('@', '').trim();
 
-    const searchResults: SearchResult[] = (result.chats as unknown[])
-      .filter(isChannelOrGroup)
-      .map((chat) => {
-        const username = chat.username ?? null;
-        const title = chat.title ?? '';
-        const participantsCount = chat.participantsCount ?? 0;
-
-        return {
-          id: chat.id.toString(),
-          title,
-          username,
-          participantsCount,
-          type: (chat._ === 'channel' ? 'channel' : 'group') as
-            | 'channel'
-            | 'group',
-          isPrivate: !username,
-        };
+    const result = await withRetry(() =>
+      client.call({
+        _: 'contacts.search',
+        q: searchQuery,
+        limit: 20,
       })
-      .filter((r) => r.title)
-      .slice(0, 50);
+    );
 
-    return Response.json(searchResults);
+    const searchResults: SearchResult[] = [];
+
+    const chats = (result.chats as unknown[]) || [];
+
+    for (const chat of chats) {
+      const chatType = (chat as { _?: string })._;
+      if (chatType !== 'channel' && chatType !== 'chat') continue;
+
+      const username =
+        (chat as { username?: string | null }).username ?? null;
+      const title = (chat as { title?: string }).title ?? '';
+      const participantsCount =
+        (chat as { participantsCount?: number | null })
+          .participantsCount ?? 0;
+
+      searchResults.push({
+        id: (chat as { id: string | number }).id.toString(),
+        title,
+        username,
+        participantsCount,
+        type: chatType === 'channel' ? 'channel' : 'group',
+        isPrivate: !username,
+      });
+    }
+
+    return Response.json(searchResults.slice(0, 50));
   } catch (error: unknown) {
     console.error('Telegram Search Error:', error);
     const message =

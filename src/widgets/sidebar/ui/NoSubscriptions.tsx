@@ -27,7 +27,7 @@ export function NoSubscriptions({
         </div>
 
         <h3 className="text-xl font-bold text-foreground mb-2">
-          {hasSubscriptions ? 'Лента пуста' : 'Начните чтение'}
+          {hasSubscriptions ? 'Лента пуста' : 'Добавьте каналы'}
         </h3>
 
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
