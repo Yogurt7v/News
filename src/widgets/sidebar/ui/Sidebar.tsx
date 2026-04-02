@@ -20,18 +20,7 @@ import { SidebarFooter } from './SidebarFooter';
 import { SidebarController } from './SidebarController';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
-interface ChannelInfo {
-  id: string;
-  username: string;
-  title: string;
-  avatar?: string;
-}
-
-interface GroupWithChannels {
-  id: string;
-  name: string;
-  channels: ChannelInfo[];
-}
+import { ChannelInfo, GroupWithChannels } from './types';
 
 interface ConfirmData {
   isOpen: boolean;

@@ -2,19 +2,7 @@
 
 import { ChannelsList } from './ChannelsList';
 import { GroupsList } from './GroupsList';
-
-interface ChannelInfo {
-  id: string;
-  username: string;
-  title: string;
-  avatar?: string;
-}
-
-interface GroupWithChannels {
-  id: string;
-  name: string;
-  channels: ChannelInfo[];
-}
+import { ChannelInfo, GroupWithChannels } from '@/entities';
 
 interface SidebarContentProps {
   channels: ChannelInfo[];

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 
 export async function POST(request: Request) {
+  const domain =
+    process.env.NODE_ENV === 'production' ? '.be-informed.ru' : undefined;
+
   try {
     const { email, password } = (await request.json()) as {
       email?: string;
@@ -34,7 +37,7 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        domain: '.be-informed.ru',
+        domain: domain,
         maxAge: 60 * 60 * 24 * 7,
       })
     );

@@ -7,8 +7,7 @@
 - **Framework**: Next.js 16 (App Router)
 - **Язык**: TypeScript 5
 - **Стилизация**: Tailwind CSS 4
-- **База данных**: PostgreSQL + Drizzle ORM + PocketBase
-- **ORM**: Drizzle ORM
+- **База данных**: PocketBase
 - **Аутентификация**: PocketBase
 - **Телеграм API**: @mtcute/node
 - **Тестирование**: Jest + Playwright
