@@ -211,6 +211,7 @@ export class TelegramParserService {
           formData.append('width', m.width.toString());
           formData.append('height', m.height.toString());
           formData.append('size', fileSize.toString());
+          formData.append('isCompressed', 'false');
 
           const uint8Array = new Uint8Array(buffer);
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
