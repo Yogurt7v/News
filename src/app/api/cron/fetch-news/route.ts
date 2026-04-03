@@ -10,10 +10,19 @@ function isAuthorized(request: Request): boolean {
   const vercelCronHeader = request.headers.get('x-vercel-cron');
   if (vercelCronHeader === '1') return true;
 
-  // Ручной запуск с кнопки — проверяем CRON_SECRET
+  // Ручной запуск с кнопки или cron-job.org — проверяем CRON_SECRET
   const authHeader = request.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
-  if (!authHeader || !secret) return false;
+
+  // Если CRON_SECRET не настроен — пропускаем (для разработки)
+  // В продакшене обязательно должен быть настроен
+  if (!secret) {
+    console.warn('CRON_SECRET not configured - allowing request');
+    return true;
+  }
+
+  // Если есть заголовок Authorization — проверяем токен
+  if (!authHeader) return false;
   const token = authHeader.split(' ')[1];
   return token === secret;
 }

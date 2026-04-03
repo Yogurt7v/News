@@ -38,15 +38,15 @@ async function fetchMediaFromPocketBase(
   });
 
   for (const m of allMedia) {
-    const newsId = m.get('newsId') as string;
+    const newsId = m.newsId as string;
     if (!mediaMap.has(newsId)) {
       mediaMap.set(newsId, []);
     }
     mediaMap.get(newsId)!.push({
       id: m.id,
-      type: m.get('type') as string,
-      file: m.get('file') as string,
-      order: (m.get('order') as number) || 0,
+      type: m.type as string,
+      file: m.file as string,
+      order: (m.order as number) || 0,
     });
   }
 

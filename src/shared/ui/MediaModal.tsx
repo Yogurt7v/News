@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
+import { FastVideo } from './FastVideo';
 
 interface MediaModalProps {
   // Используем простую структуру массива, которую мы передаем из NewsCard
@@ -138,11 +139,13 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <video
+              <FastVideo
                 src={current.url}
-                controls
-                autoPlay
-                className="w-full h-full object-contain outline-none"
+                className="w-full h-full"
+                autoPlay={true}
+                controls={true}
+                muted={false}
+                lazy={false}
               />
             </div>
           )}

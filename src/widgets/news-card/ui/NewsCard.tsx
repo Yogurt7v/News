@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { MediaModal } from '@/shared/ui/MediaModal';
+import { FastVideo } from '@/shared/ui/FastVideo';
 import { getMediaFileUrl } from '@/shared/lib/files';
 
 interface NewsCardProps {
@@ -38,26 +39,6 @@ const formatTimeAgo = (date: Date): string => {
 
 export function NewsCard({ news }: NewsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldLoadVideo(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '200px' }
-    );
-
-    if (videoRef.current) {
-      observer.observe(videoRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   const expandedMedia = news.expand?.['media(newsId)'] as
     | Array<{
@@ -93,8 +74,6 @@ export function NewsCard({ news }: NewsCardProps) {
     ? new Date(news.publishedAt)
     : null;
   const timeAgo = publishedDate ? formatTimeAgo(publishedDate) : '';
-
-  console.log(news);
 
   return (
     <>
@@ -133,52 +112,12 @@ export function NewsCard({ news }: NewsCardProps) {
               onClick={() => setIsModalOpen(true)}
             >
               {mainMedia.type === 'video' ? (
-                <div className="relative w-full h-full">
-                  {mainMedia.thumbnailUrl ? (
-                    <>
-                      <Image
-                        src={mainMedia.thumbnailUrl}
-                        alt="Video thumbnail"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                        <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                          <svg
-                            className="w-7 h-7 text-[#229ED9] ml-1"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <video
-                        ref={videoRef}
-                        src={shouldLoadVideo ? mainMedia.url : undefined}
-                        className="w-full h-full object-cover"
-                        muted
-                        playsInline
-                        preload="none"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                        <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                          <svg
-                            className="w-7 h-7 text-[#229ED9] ml-1"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <FastVideo
+                  src={mainMedia.url}
+                  poster={mainMedia.thumbnailUrl}
+                  className="w-full h-full"
+                  lazy={true}
+                />
               ) : (
                 <Image
                   src={mainMedia.url}

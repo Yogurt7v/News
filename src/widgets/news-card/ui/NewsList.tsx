@@ -34,7 +34,7 @@ interface NewsListProps {
 export function NewsList({ initialNews }: NewsListProps) {
   const [news, setNews] = useState(initialNews);
   const [isPending, startTransition] = useTransition();
-  const [hasMore, setHasMore] = useState(initialNews.length === 20);
+  const [hasMore, setHasMore] = useState(initialNews.length >= 5);
   const [newNewsCount, setNewNewsCount] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,7 @@ export function NewsList({ initialNews }: NewsListProps) {
 
   useEffect(() => {
     setNews(initialNews);
-    setHasMore(initialNews.length === 20);
+    setHasMore(initialNews.length >= 5);
   }, [initialNews]);
 
   const handleNewNews = useCallback(
@@ -74,7 +74,7 @@ export function NewsList({ initialNews }: NewsListProps) {
     startTransition(async () => {
       const params = new URLSearchParams({
         offset: news.length.toString(),
-        limit: '20',
+        limit: '5',
       });
       if (currentChannel) {
         params.set('channel', currentChannel);
@@ -84,7 +84,7 @@ export function NewsList({ initialNews }: NewsListProps) {
       const res = await fetch(`/api/news?${params.toString()}`);
       const newNewsItems = await res.json();
       setNews((prev) => [...prev, ...newNewsItems]);
-      setHasMore(newNewsItems.length === 20);
+      setHasMore(newNewsItems.length >= 5);
     });
   };
 
@@ -120,40 +120,62 @@ export function NewsList({ initialNews }: NewsListProps) {
         </div>
       ))}
 
-      {hasMore && (
-        <button
-          onClick={loadMore}
-          disabled={isPending}
-          className="w-full py-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-sm font-semibold text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up"
-          style={{ animationDelay: `${news.length * 50 + 200}ms` }}
-        >
-          {isPending ? (
-            <>
-              <svg
-                className="w-5 h-5 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Загрузка...
-            </>
-          ) : (
-            'Загрузить ещё'
+      {(hasMore || (!hasMore && news.length > 0)) && (
+        <div className="flex gap-3">
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={isPending}
+              className="flex-1 py-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-sm font-semibold text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up"
+              style={{ animationDelay: `${news.length * 50 + 200}ms` }}
+            >
+              {isPending ? (
+                <>
+                  <svg
+                    className="w-5 h-5 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Загрузка...
+                </>
+              ) : (
+                'Загрузить ещё'
+              )}
+            </button>
           )}
-        </button>
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="py-4 px-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
+            style={{ animationDelay: `${news.length * 50 + 250}ms` }}
+            title="Наверх"
+          >
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
+        </div>
       )}
 
       {!hasMore && news.length > 0 && (

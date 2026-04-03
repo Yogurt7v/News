@@ -71,7 +71,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     }
   }
 
-  const result = await pb.collection('news').getList(1, 20, {
+  const result = await pb.collection('news').getList(1, 5, {
     filter: filter || undefined,
     sort: '-publishedAt',
     expand: 'media(newsId)',

@@ -61,6 +61,12 @@ export class TelegramParserService {
     limit: number = parseInt(process.env.POST_LIMIT!)
   ): Promise<TelegramPost[]> {
     const username = channelUsername.replace('@', '');
+
+    // Если username на кириллице - ищем через диалоги
+    if (/[а-яА-ЯёЁ]/.test(username)) {
+      return this.getChannelPostsByTitle(client, username, limit);
+    }
+
     this.log(`\n🔍 [${username}] Запрашиваю историю сообщений...`);
 
     // Берем с запасом, чтобы собрать полные альбомы
@@ -116,6 +122,102 @@ export class TelegramParserService {
     }
 
     return posts.slice(0, limit);
+  }
+
+  private async getChannelPostsByTitle(
+    client: TelegramClient,
+    channelTitle: string,
+    limit: number
+  ): Promise<TelegramPost[]> {
+    this.log(`🔍 [${channelTitle}] Ищу канал по названию...`);
+
+    try {
+      let foundChat: any = null;
+
+      // Ищем в диалогах пользователя
+      for await (const dialog of client.iterDialogs({ limit: 200 })) {
+        const chat =
+          (dialog as any).entity || (dialog as any).chat || dialog;
+        if (
+          chat &&
+          chat.title?.toLowerCase().includes(channelTitle.toLowerCase())
+        ) {
+          if (
+            chat._ === 'channel' ||
+            chat._ === 'chat' ||
+            chat._ === 'channelForbidden'
+          ) {
+            foundChat = chat;
+            break;
+          }
+        }
+      }
+
+      if (!foundChat) {
+        this.log(`⚠️ [${channelTitle}] Канал не найден в диалогах`);
+        return [];
+      }
+
+      const peerId = foundChat.id.toString();
+      this.log(`✅ [${channelTitle}] Найден: peerId=${peerId}`);
+
+      const messages = await client.getHistory(peerId, {
+        limit: limit * 2,
+      });
+
+      const groupedMessages = new Map<string, any[]>();
+      for (const msg of messages) {
+        const groupId = msg.groupedId
+          ? `group_${msg.groupedId.toString()}`
+          : `single_${msg.id}`;
+        if (!groupedMessages.has(groupId))
+          groupedMessages.set(groupId, []);
+        groupedMessages.get(groupId)!.push(msg);
+      }
+
+      this.log(
+        `📦 [${channelTitle}] Найдено групп/постов: ${groupedMessages.size}`
+      );
+
+      const posts: TelegramPost[] = [];
+
+      for (const [_, msgs] of groupedMessages) {
+        msgs.sort((a: any, b: any) => a.id - b.id);
+        const mainMsg = msgs[0];
+        const fullText = msgs
+          .map((m: any) => m.text || '')
+          .filter(Boolean)
+          .join('\n')
+          .trim();
+        const allMedia: TelegramPostMedia[] = [];
+
+        if (msgs.some((m: any) => m.media)) {
+          for (const msg of msgs) {
+            if (msg.media) {
+              const extracted = await this.extractMedia(msg.media, client);
+              if (extracted) allMedia.push(extracted);
+            }
+          }
+        }
+
+        if (!fullText && allMedia.length === 0) continue;
+
+        posts.push({
+          id: mainMsg.id,
+          date: mainMsg.date,
+          message: fullText,
+          peerId: peerId,
+          channelUsername: '',
+          channelTitle: mainMsg.chat?.title || channelTitle,
+          media: allMedia,
+        });
+      }
+
+      return posts.slice(0, limit);
+    } catch (e) {
+      this.log(`❌ [${channelTitle}] Ошибка: ${(e as Error).message}`);
+      return [];
+    }
   }
 
   private async extractMedia(
