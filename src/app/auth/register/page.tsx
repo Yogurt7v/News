@@ -64,7 +64,7 @@ function RegisterContent() {
       <div className="w-full max-w-sm">
         <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8 animate-scale-in">
           <div className="flex justify-center mb-6 animate-fade-in-up">
-            <div className="h-14 w-14 rounded-full bg-[#229ED9] flex items-center justify-center shadow-md shadow-blue-500/20">
+            <div className="h-14 w-14 rounded-full bg-[#0071e3] flex items-center justify-center shadow-md shadow-blue-500/20">
               <svg
                 viewBox="0 0 24 24"
                 className="h-7 w-7 text-white"
@@ -89,7 +89,7 @@ function RegisterContent() {
                   y1="12"
                   x2="17"
                   y2="12"
-                  stroke="#229ED9"
+                  stroke="#0071e3"
                   strokeWidth="1.5"
                 />
                 <line
@@ -97,7 +97,7 @@ function RegisterContent() {
                   y1="15"
                   x2="15"
                   y2="15"
-                  stroke="#229ED9"
+                  stroke="#0071e3"
                   strokeWidth="1.5"
                 />
               </svg>
@@ -121,7 +121,7 @@ function RegisterContent() {
                 type="text"
                 placeholder="Ваше имя"
                 required
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
               />
             </div>
 
@@ -131,7 +131,7 @@ function RegisterContent() {
                 type="email"
                 placeholder="Email"
                 required
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
               />
             </div>
 
@@ -142,7 +142,7 @@ function RegisterContent() {
                 placeholder="Пароль"
                 required
                 minLength={8}
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
               />
             </div>
 
@@ -153,7 +153,7 @@ function RegisterContent() {
                 placeholder="Подтвердите пароль"
                 required
                 minLength={8}
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
               />
             </div>
 
@@ -166,7 +166,7 @@ function RegisterContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#229ED9] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#1b8ec2] disabled:opacity-60 active:scale-[0.98] shadow-sm shadow-blue-500/20 flex items-center justify-center gap-2"
+              className="w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#005bb5] disabled:opacity-60 active:scale-[0.98] shadow-sm shadow-blue-500/20 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <svg
@@ -200,7 +200,7 @@ function RegisterContent() {
             </span>
             <Link
               href="/auth/signin"
-              className="text-sm font-medium text-[#229ED9] hover:underline"
+              className="text-sm font-medium text-[#0071e3] hover:underline"
             >
               Войти в систему
             </Link>

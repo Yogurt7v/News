@@ -27,7 +27,7 @@ export function Toast({
       ? 'bg-green-500'
       : type === 'error'
         ? 'bg-red-500'
-        : 'bg-[#229ED9]';
+        : 'bg-[#0071e3]';
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] animate-slide-up">

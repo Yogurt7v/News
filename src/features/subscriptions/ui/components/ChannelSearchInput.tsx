@@ -18,12 +18,12 @@ export function ChannelSearchInput({
         placeholder="Введите название канала..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-4 pr-12 rounded-2xl bg-white/70 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 focus:border-[#229ED9]/50 focus:ring-2 focus:ring-[#229ED9]/20 outline-none hover:scale-[1.01] transition-all duration-200 placeholder:text-black/30 dark:placeholder:text-white/30"
+        className="w-full px-4 py-4 pr-12 rounded-2xl bg-white/70 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 focus:border-[#0071e3]/50 focus:ring-2 focus:ring-[#0071e3]/20 outline-none hover:scale-[1.01] transition-all duration-200 placeholder:text-black/30 dark:placeholder:text-white/30"
         autoComplete="off"
       />
       {isLoading && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
-          <div className="w-5 h-5 border-2 border-[#229ED9] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {!isLoading && value && (

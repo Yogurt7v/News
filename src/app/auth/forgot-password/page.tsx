@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center text-sm text-gray-500">
             <Link
               href="/auth/signin"
-              className="text-[#229ED9] hover:underline"
+              className="text-[#0071e3] hover:underline"
             >
               Вернуться ко входу
             </Link>

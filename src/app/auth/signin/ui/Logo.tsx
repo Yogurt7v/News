@@ -1,7 +1,7 @@
 export function Logo() {
   return (
     <div className="flex justify-center mb-6">
-      <div className="h-14 w-14 rounded-full bg-[#229ED9] flex items-center justify-center shadow-md shadow-blue-500/20">
+      <div className="h-14 w-14 rounded-full bg-[#0071e3] flex items-center justify-center shadow-md shadow-blue-500/20">
         <svg
           viewBox="0 0 24 24"
           className="h-7 w-7 text-white"
@@ -26,7 +26,7 @@ export function Logo() {
             y1="12"
             x2="17"
             y2="12"
-            stroke="#229ED9"
+            stroke="#0071e3"
             strokeWidth="1.5"
           />
           <line
@@ -34,7 +34,7 @@ export function Logo() {
             y1="15"
             x2="15"
             y2="15"
-            stroke="#229ED9"
+            stroke="#0071e3"
             strokeWidth="1.5"
           />
         </svg>

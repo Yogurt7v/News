@@ -38,12 +38,12 @@ export default function OfflinePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#229ED9]/5">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
       <div className="w-full max-w-md text-center">
         <div className="mb-8 animate-fade-in">
-          <div className="w-32 h-32 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-[#229ED9]/10 to-[#229ED9]/5 flex items-center justify-center">
+          <div className="w-32 h-32 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-[#0071e3]/10 to-[#0071e3]/5 flex items-center justify-center">
             <svg
-              className="w-16 h-16 text-[#229ED9]"
+              className="w-16 h-16 text-[#0071e3]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -80,7 +80,7 @@ export default function OfflinePage() {
               <button
                 onClick={handleRetry}
                 disabled={isChecking}
-                className="w-full px-6 py-4 rounded-2xl bg-[#229ED9] hover:bg-[#1b8ec2] text-white font-semibold shadow-lg shadow-[#229ED9]/25 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-6 py-4 rounded-2xl bg-[#0071e3] hover:bg-[#005bb5] text-white font-semibold shadow-lg shadow-[#0071e3]/25 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isChecking ? (
                   <>

@@ -12,7 +12,7 @@ export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => (window.location.href = '/')}
         >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1b8ec2] flex items-center justify-center text-white shadow-lg  group-hover:shadow-xl group-hover:shadow-[#229ED9]/40 transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0071e3] to-[#005bb5] flex items-center justify-center text-white shadow-lg  group-hover:shadow-xl group-hover:shadow-[#0071e3]/40 transition-all">
             <span className="text-xl font-bold">N</span>
           </div>
           <div>
@@ -29,7 +29,7 @@ export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
           className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center active:scale-95"
         >
           <svg
-            className="w-5 h-5 text-[#229ED9]"
+            className="w-5 h-5 text-[#0071e3]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

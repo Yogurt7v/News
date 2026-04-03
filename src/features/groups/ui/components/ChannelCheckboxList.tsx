@@ -13,11 +13,11 @@ function ChannelCheckbox({
 }: ChannelCheckboxProps) {
   return (
     <label
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 hover:scale-[1.01] ${isSelected ? 'bg-[#229ED9]/10 dark:bg-[#229ED9]/20 border border-[#229ED9]/40' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 hover:scale-[1.01] ${isSelected ? 'bg-[#0071e3]/10 dark:bg-[#0071e3]/20 border border-[#0071e3]/40' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
     >
       <input
         type="checkbox"
-        className="w-4 h-4 rounded border-gray-300 text-[#229ED9] focus:ring-[#229ED9]"
+        className="w-4 h-4 rounded border-gray-300 text-[#0071e3] focus:ring-[#0071e3]"
         checked={isSelected}
         onChange={onToggle}
       />

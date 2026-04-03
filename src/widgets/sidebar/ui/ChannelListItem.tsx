@@ -21,7 +21,7 @@ export function ChannelListItem({
       onClick={onClick}
       className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group ${
         isActive
-          ? 'bg-[#229ED9] text-white shadow-lg shadow-[#229ED9]/30'
+          ? 'bg-[#0071e3] text-white shadow-lg shadow-[#0071e3]/30'
           : 'hover:bg-gray-100 dark:hover:bg-gray-800'
       }`}
     >

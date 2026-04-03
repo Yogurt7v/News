@@ -93,7 +93,7 @@ export function NewsList({ initialNews }: NewsListProps) {
       {newNewsCount > 0 && (
         <button
           onClick={showNewNews}
-          className="w-full py-3 rounded-2xl bg-[#229ED9] text-white font-semibold hover:bg-[#1b8ec2] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 animate-fade-in-up"
+          className="w-full py-3 rounded-2xl bg-[#0071e3] text-white font-semibold hover:bg-[#005bb5] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 animate-fade-in-up"
         >
           <svg
             className="w-5 h-5"

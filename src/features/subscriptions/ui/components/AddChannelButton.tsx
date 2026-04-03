@@ -9,7 +9,7 @@ export function AddChannelButton({
     <button
       type="submit"
       disabled={isPending || disabled}
-      className="w-full py-4 rounded-2xl bg-[#229ED9] hover:bg-[#1b8ec2] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-[#229ED9]/25 active:scale-[0.98]"
+      className="w-full py-4 rounded-2xl bg-[#0071e3] hover:bg-[#005bb5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-[#0071e3]/25 active:scale-[0.98]"
     >
       {isPending ? (
         <span className="flex items-center justify-center gap-2">

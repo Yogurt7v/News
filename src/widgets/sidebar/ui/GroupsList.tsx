@@ -48,14 +48,14 @@ export function GroupsList({
             }}
             className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
               currentGroupId === group.id
-                ? 'bg-[#229ED9]/10 border border-[#229ED9]/20'
+                ? 'bg-[#0071e3]/10 border border-[#0071e3]/20'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                 currentGroupId === group.id
-                  ? 'bg-[#229ED9]/20'
+                  ? 'bg-[#0071e3]/20'
                   : 'bg-gray-100 dark:bg-gray-800'
               }`}
             >
@@ -64,7 +64,7 @@ export function GroupsList({
             {editingGroupId === group.id ? (
               <input
                 autoFocus
-                className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#229ED9]/50"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#0071e3]/50"
                 value={editName}
                 onChange={(e) => onEditChange(e.target.value)}
                 onBlur={() => onEditSubmit(group.id)}

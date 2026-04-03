@@ -6,8 +6,8 @@ export function RememberCheckbox() {
           type="checkbox"
           name="remember"
           className="peer h-full w-full appearance-none rounded-md border-2 border-gray-200 bg-white transition-all 
-             checked:border-[#229ED9] checked:bg-[#229ED9] 
-             hover:border-[#229ED9]/50 focus:outline-none focus:ring-2 focus:ring-[#229ED9]/20
+             checked:border-[#0071e3] checked:bg-[#0071e3] 
+             hover:border-[#0071e3]/50 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20
              dark:border-[#3a3a3c] dark:bg-[#2a2a2c]"
         />
         <svg

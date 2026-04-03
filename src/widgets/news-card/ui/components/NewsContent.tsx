@@ -21,7 +21,7 @@ export function NewsContent({ title, content, url }: NewsContentProps) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm font-medium text-[#229ED9] hover:underline"
+        className="inline-flex items-center gap-2 text-sm font-medium text-[#0071e3] hover:underline"
       >
         Читать в Telegram
         <svg

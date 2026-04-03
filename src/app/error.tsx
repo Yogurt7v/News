@@ -22,7 +22,7 @@ export default function ErrorBoundary({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#229ED9]/5">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
       <div className="w-full max-w-md">
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 shadow-2xl shadow-black/5 overflow-hidden animate-fade-in">
           <div className="p-8 text-center">
@@ -68,7 +68,7 @@ export default function ErrorBoundary({
               <button
                 onClick={handleReset}
                 disabled={isResetting}
-                className="flex-1 px-6 py-4 rounded-2xl bg-[#229ED9] hover:bg-[#1b8ec2] text-white font-semibold shadow-lg shadow-[#229ED9]/25 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-4 rounded-2xl bg-[#0071e3] hover:bg-[#005bb5] text-white font-semibold shadow-lg shadow-[#0071e3]/25 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isResetting ? (
                   <>

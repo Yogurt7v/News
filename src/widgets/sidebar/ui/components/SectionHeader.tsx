@@ -15,7 +15,7 @@ export function SectionHeader({ title, action }: SectionHeaderProps) {
       {action && (
         <button
           onClick={action.onClick}
-          className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
+          className="text-[11px] font-bold text-[#0071e3] hover:text-[#005bb5] transition-colors"
         >
           {action.label}
         </button>

@@ -54,7 +54,7 @@ export function SidebarContent({
         onClick={onAllPostsClick}
         className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
           !currentChannel && !currentGroupId
-            ? 'bg-[#229ED9] text-white shadow-lg shadow-[#229ED9]/30'
+            ? 'bg-[#0071e3] text-white shadow-lg shadow-[#0071e3]/30'
             : 'hover:bg-white/60 dark:hover:bg-white/5'
         }`}
       >
@@ -100,7 +100,7 @@ export function SidebarContent({
         </p>
         <button
           onClick={onCreateGroupClick}
-          className="text-[11px] font-bold text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
+          className="text-[11px] font-bold text-[#0071e3] hover:text-[#005bb5] transition-colors"
         >
           + Создать
         </button>

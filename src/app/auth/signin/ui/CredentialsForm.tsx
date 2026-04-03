@@ -25,7 +25,7 @@ export function CredentialsForm({
         type="email"
         placeholder="Email"
         required
-        className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+        className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
       />
 
       <input
@@ -33,13 +33,13 @@ export function CredentialsForm({
         type="password"
         placeholder="Пароль"
         required
-        className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none transition-all"
+        className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none transition-all"
       />
 
       <div className="flex items-center justify-end px-1 py-1">
         <Link
           href="/auth/forgot-password"
-          className="text-[12px] font-medium text-[#229ED9] hover:text-[#1b8ec2] transition-colors"
+          className="text-[12px] font-medium text-[#0071e3] hover:text-[#005bb5] transition-colors"
         >
           Забыли?
         </Link>
@@ -54,7 +54,7 @@ export function CredentialsForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-[#229ED9] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#1b8ec2] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#005bb5] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <svg
@@ -99,8 +99,8 @@ export function CredentialsForm({
 //           type="checkbox"
 //           name="remember"
 //           className="peer h-full w-full appearance-none rounded-md border-2 border-gray-200 bg-white transition-all
-//              checked:border-[#229ED9] checked:bg-[#229ED9]
-//              hover:border-[#229ED9]/50 focus:outline-none focus:ring-2 focus:ring-[#229ED9]/20
+//              checked:border-[#0071e3] checked:bg-[#0071e3]
+//              hover:border-[#0071e3]/50 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20
 //              dark:border-[#3a3a3c] dark:bg-[#2a2a2c]"
 //         />
 //         <svg

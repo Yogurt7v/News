@@ -82,9 +82,9 @@ export function NewsCard({ news }: NewsCardProps) {
           {/* Header */}
           <div className="px-5 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#229ED9]/10 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-[#0071e3]/10 flex items-center justify-center">
                 <svg
-                  className="w-3.5 h-3.5 text-[#229ED9]"
+                  className="w-3.5 h-3.5 text-[#0071e3]"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -92,7 +92,7 @@ export function NewsCard({ news }: NewsCardProps) {
                   <path d="M9 9l6 3-6 3V9z" />
                 </svg>
               </div>
-              <span className="text-sm font-semibold text-[#229ED9]">
+              <span className="text-sm font-semibold text-[#0071e3]">
                 {news.channelTitle!.length > 0
                   ? news.channelTitle
                   : news.source}

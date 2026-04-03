@@ -78,7 +78,7 @@ function PlayButton() {
   return (
     <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
       <svg
-        className="w-7 h-7 text-[#229ED9] ml-1"
+        className="w-7 h-7 text-[#0071e3] ml-1"
         viewBox="0 0 24 24"
         fill="currentColor"
       >

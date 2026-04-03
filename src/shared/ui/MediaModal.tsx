@@ -55,11 +55,15 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in"
-      onClick={onClose}
+      onClick={(e) => {
+        // Закрываем только если кликнули на фон (не на контент)
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div
         className="relative w-full h-full flex items-center justify-center animate-bounce-in"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка Закрыть */}
         <button

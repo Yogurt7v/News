@@ -22,7 +22,7 @@ export function SidebarController({
         className={`md:hidden fixed z-[100] w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-all duration-300 ${
           isScrollingDown
             ? 'top-4 right-4 bg-white/20 backdrop-blur-md text-white/60 border border-white/20'
-            : 'top-12 right-10 bg-[#229ED9] text-white shadow-[#229ED9]/40'
+            : 'top-12 right-10 bg-[#0071e3] text-white shadow-[#0071e3]/40'
         }`}
       >
         <svg

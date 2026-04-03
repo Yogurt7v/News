@@ -16,7 +16,7 @@ export function ModalFooter({
   const isDanger = variant === 'danger';
   const confirmClass = isDanger
     ? 'bg-red-600 hover:bg-red-700'
-    : 'bg-[#229ED9] hover:bg-[#1f8cc7]';
+    : 'bg-[#0071e3] hover:bg-[#1f8cc7]';
 
   return (
     <div className="px-4 py-4 flex flex-col sm:flex-row gap-2 sm:gap-3 bg-gray-50/80 dark:bg-black/30 border-t border-black/5 dark:border-white/5">

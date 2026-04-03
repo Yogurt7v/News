@@ -47,7 +47,7 @@ export function SelectedChannelPreview({
           type="button"
           onClick={onSubscribe}
           disabled={isLoading}
-          className="flex-1 py-3 rounded-xl bg-[#229ED9] hover:bg-[#1b8ec2] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all"
+          className="flex-1 py-3 rounded-xl bg-[#0071e3] hover:bg-[#005bb5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all"
         >
           {isLoading ? 'Подписка...' : 'Подписаться'}
         </button>

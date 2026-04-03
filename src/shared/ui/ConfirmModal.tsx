@@ -44,7 +44,7 @@ export function ConfirmModal({
             className={`flex-1 px-5 py-3 rounded-2xl text-sm font-semibold text-white transition-all ${
               variant === 'danger'
                 ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25'
-                : 'bg-[#229ED9] hover:bg-[#1b8ec2] shadow-lg shadow-[#229ED9]/25'
+                : 'bg-[#0071e3] hover:bg-[#005bb5] shadow-lg shadow-[#0071e3]/25'
             }`}
           >
             Подтвердить

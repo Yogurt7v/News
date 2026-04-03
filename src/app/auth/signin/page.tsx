@@ -166,7 +166,7 @@ function SignInContent({
           <div className="flex items-center justify-center border-t border-gray-50 dark:border-[#2a2a2c] mt-8 pt-6">
             <Link
               href="/auth/register"
-              className="text-center text-xs text-gray-400 dark:text-gray-500 hover:text-[#229ED9] transition underline-offset-4 hover:underline"
+              className="text-center text-xs text-gray-400 dark:text-gray-500 hover:text-[#0071e3] transition underline-offset-4 hover:underline"
             >
               Создать новый аккаунт
             </Link>
@@ -190,8 +190,8 @@ function SignInLoader() {
         <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
           <div className="flex flex-col items-center">
             <div className="relative mb-6">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1a8bc2] animate-pulse shadow-lg shadow-[#229ED9]/20" />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#229ED9] to-[#1a8bc2] animate-ping opacity-20" />
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#0071e3] to-[#1a8bc2] animate-pulse shadow-lg shadow-[#0071e3]/20" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#0071e3] to-[#1a8bc2] animate-ping opacity-20" />
             </div>
 
             <div className="space-y-3 w-full">

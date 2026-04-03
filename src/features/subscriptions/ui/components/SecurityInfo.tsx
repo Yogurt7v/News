@@ -1,10 +1,10 @@
 export function SecurityInfo() {
   return (
-    <div className="p-4 rounded-2xl bg-[#229ED9]/5 border border-[#229ED9]/10">
+    <div className="p-4 rounded-2xl bg-[#0071e3]/5 border border-[#0071e3]/10">
       <div className="flex gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#229ED9]/10 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-[#0071e3]/10 flex items-center justify-center shrink-0">
           <svg
-            className="w-5 h-5 text-[#229ED9]"
+            className="w-5 h-5 text-[#0071e3]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -14,7 +14,7 @@ export function SecurityInfo() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#229ED9]">
+          <p className="text-sm font-semibold text-[#0071e3]">
             Безопасность
           </p>
           <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 leading-relaxed">

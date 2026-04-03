@@ -74,7 +74,7 @@ function ResetPasswordForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none"
               />
               <input
                 type="password"
@@ -82,12 +82,12 @@ function ResetPasswordForm() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#229ED9] outline-none"
+                className="w-full rounded-xl border border-gray-200 dark:border-[#2a2a2c] bg-gray-50 dark:bg-[#2a2a2c] px-4 py-3 text-sm focus:ring-2 focus:ring-[#0071e3] outline-none"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#229ED9] text-white py-3 rounded-xl font-medium hover:bg-[#1b8ec2] disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-[#0071e3] text-white py-3 rounded-xl font-medium hover:bg-[#005bb5] disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <svg
@@ -118,7 +118,7 @@ function ResetPasswordForm() {
           <div className="mt-6 text-center text-sm text-gray-500">
             <Link
               href="/auth/signin"
-              className="text-[#229ED9] hover:underline"
+              className="text-[#0071e3] hover:underline"
             >
               Вернуться ко входу
             </Link>
