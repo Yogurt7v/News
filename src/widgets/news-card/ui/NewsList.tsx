@@ -157,11 +157,36 @@ export function NewsList({ initialNews }: NewsListProps) {
               )}
             </button>
           )}
+          {hasMore && (
+            <button
+              onClick={() =>
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+              className="py-4 px-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
+              style={{ animationDelay: `${news.length * 50 + 250}ms` }}
+              title="Наверх"
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
+      {!hasMore && news.length > 0 && (
+        <div className="flex justify-center text-center py-4">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="py-4 px-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
-            style={{ animationDelay: `${news.length * 50 + 250}ms` }}
-            title="Наверх"
+            className="py-4 px-4 gap-2 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
           >
             <svg
               className="w-5 h-5"
@@ -174,15 +199,19 @@ export function NewsList({ initialNews }: NewsListProps) {
             >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
+            Вы просмотрели все новости{' '}
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
           </button>
-        </div>
-      )}
-
-      {!hasMore && news.length > 0 && (
-        <div className="text-center py-8">
-          <p className="text-sm text-black/30 dark:text-white/30">
-            Вы просмотрели все новости
-          </p>
         </div>
       )}
     </div>
