@@ -73,7 +73,7 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   const result = await pb.collection('news').getList(1, 5, {
     filter: filter || undefined,
-    sort: '-publishedAt',
+    sort: '-created',
     expand: 'media(newsId)',
   });
 
@@ -107,7 +107,7 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <Wallpaper>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-dvh">
         <Sidebar />
         <main className="flex-1 min-w-0">
           <div className="max-w-2xl mx-auto px-4 py-6">

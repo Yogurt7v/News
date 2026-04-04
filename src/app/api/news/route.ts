@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     publishedAt: string;
     createdAt: string;
   }>(offset + 1, limit, {
-    sort: '-publishedAt',
+    sort: '-created',
     filter: filter || undefined,
   });
 

@@ -6,9 +6,10 @@ interface WallpaperProps {
 
 export function Wallpaper({ children }: WallpaperProps) {
   return (
-    <div className="relative min-h-screen">
-      {/* Light theme - soft blue accent */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:hidden" />
+    <div className="relative min-h-screen bg-[#f5f5f7] dark:bg-black">
+      {/* Light theme - subtle gradient */}
+      <div className="fixed inset-0 z-0 pointer-events-none dark:hidden bg-gradient-to-br from-white via-[#f8f9fa] to-[#f0f1f2]" />
+      {/* Dark theme gradient */}
       <div
         className="fixed inset-0 z-0 pointer-events-none hidden dark:block"
         style={{

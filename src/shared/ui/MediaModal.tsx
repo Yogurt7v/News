@@ -54,7 +54,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={(e) => {
         // Закрываем только если кликнули на фон (не на контент)
         if (e.target === e.currentTarget) {
@@ -62,9 +62,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
         }
       }}
     >
-      <div
-        className="relative w-full h-full flex items-center justify-center animate-bounce-in"
-      >
+      <div className="relative w-full h-full flex items-center justify-center animate-bounce-in">
         {/* Кнопка Закрыть */}
         <button
           onClick={onClose}
@@ -142,10 +140,10 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
               />
             </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="flex items-center justify-center">
               <FastVideo
                 src={current.url}
-                className="w-full h-full"
+                className="max-w-full max-h-full"
                 autoPlay={true}
                 controls={true}
                 muted={false}

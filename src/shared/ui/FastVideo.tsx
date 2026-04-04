@@ -150,7 +150,7 @@ export function FastVideo({
         playsInline={playsInline}
         controls={controls}
         preload={lazy ? 'none' : 'metadata'}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         onLoadStart={() => setIsLoading(true)}
         onCanPlay={() => {
           setIsLoading(false);
