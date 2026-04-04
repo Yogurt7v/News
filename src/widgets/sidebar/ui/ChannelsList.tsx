@@ -1,22 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import { getAvatarUrl } from '@/shared/lib/files';
-
-interface ChannelItem {
-  id: string;
-  username: string;
-  title: string;
-  avatar?: string;
-}
-
-interface ChannelsListProps {
-  channels: ChannelItem[];
-  currentChannel: string | null;
-  onChannelClick: (username: string) => void;
-  onUnsubscribe: (e: React.MouseEvent, channel: ChannelItem) => void;
-}
+import type { ChannelsListProps } from './ChannelsList.types';
 
 export function ChannelsList({
   channels,

@@ -1,9 +1,5 @@
 import Image from 'next/image';
-
-interface NewsMediaProps {
-  media: { type: string; url: string; thumbnailUrl?: string }[];
-  onClick: () => void;
-}
+import type { NewsMediaProps, VideoPlayerProps } from './NewsMedia.types';
 
 export function NewsMedia({ media, onClick }: NewsMediaProps) {
   const mainMedia = media.length > 0 ? media[0] : null;
@@ -44,12 +40,7 @@ export function NewsMedia({ media, onClick }: NewsMediaProps) {
   );
 }
 
-interface VideoPlayerProps {
-  url: string;
-  thumbnailUrl?: string;
-}
-
-function VideoPlayer({ url, thumbnailUrl }: VideoPlayerProps) {
+function VideoPlayer({ thumbnailUrl }: VideoPlayerProps) {
   return (
     <div className="relative w-full h-full">
       {thumbnailUrl ? (

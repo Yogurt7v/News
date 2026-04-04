@@ -6,27 +6,7 @@ import { MediaModal } from '@/shared/ui/MediaModal';
 import { FastVideo } from '@/shared/ui/FastVideo';
 import { getMediaFileUrl } from '@/shared/lib/files';
 
-interface NewsCardProps {
-  news: {
-    id: string;
-    title: string;
-    content: string;
-    source: string;
-    channelTitle?: string;
-    url: string;
-    imageUrl?: string;
-    publishedAt?: string;
-    expand?: Record<string, unknown>;
-    media?: Array<{
-      type: string;
-      file: string;
-      thumbnail?: string;
-      order?: number;
-      id: string;
-    }>;
-    [key: string]: unknown;
-  };
-}
+import type { NewsCardProps } from './NewsCard.types';
 
 const formatTimeAgo = (date: Date): string => {
   return date.toLocaleDateString('ru', {

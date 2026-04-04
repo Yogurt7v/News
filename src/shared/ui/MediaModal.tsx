@@ -5,11 +5,7 @@ import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { FastVideo } from './FastVideo';
 
-interface MediaModalProps {
-  // Используем простую структуру массива, которую мы передаем из NewsCard
-  media: { type: string; url: string }[];
-  onClose: () => void;
-}
+import type { MediaModalProps } from './MediaModal.types';
 
 export function MediaModal({ media, onClose }: MediaModalProps) {
   const [currentIndex, setCurrentIndex] = useState(0);

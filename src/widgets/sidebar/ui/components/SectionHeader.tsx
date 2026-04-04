@@ -1,10 +1,4 @@
-interface SectionHeaderProps {
-  title: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+import type { SectionHeaderProps } from './SectionHeader.types';
 
 export function SectionHeader({ title, action }: SectionHeaderProps) {
   return (

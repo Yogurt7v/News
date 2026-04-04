@@ -3,19 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { subscribeToChannel } from '../actions.pb';
 import { useDebounce } from '@/shared/lib/useDebounce';
-
-interface ChannelResult {
-  id: string;
-  title: string;
-  username: string | null;
-  participantsCount: number;
-  type: 'channel' | 'group' | 'bot';
-  isPrivate: boolean;
-}
-
-interface AddChannelFormProps {
-  onSuccess?: () => void;
-}
+import type {
+  ChannelResult,
+  AddChannelFormProps,
+} from './AddChannelForm.types';
 
 const TypeIcon = ({ type }: { type: string }) => {
   if (type === 'channel') {

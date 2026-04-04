@@ -1,8 +1,6 @@
 'use client';
 
-interface SidebarFooterProps {
-  onLogout: () => void;
-}
+import type { SidebarFooterProps } from './SidebarFooter.types';
 
 export function SidebarFooter({ onLogout }: SidebarFooterProps) {
   return (

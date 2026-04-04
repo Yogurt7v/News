@@ -1,5 +1,4 @@
-'use client';
-
+import type { DeleteGroupModalProps } from './DeleteGroupModal.types';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -7,12 +6,6 @@ import {
   DeleteConfirmMessage,
   ModalFooter,
 } from './components';
-
-interface DeleteGroupModalProps {
-  groupName: string;
-  onClose: () => void;
-  onConfirm: () => Promise<void>;
-}
 
 export function DeleteGroupModal({
   groupName,

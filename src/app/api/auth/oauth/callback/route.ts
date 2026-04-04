@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     finalResponse.cookies.delete('pb_oauth');
     return finalResponse;
-  } catch (err) {
+  } catch {
     return NextResponse.redirect(
       new URL('/auth/signin?error=auth_failed', request.nextUrl.origin)
     );

@@ -1,10 +1,5 @@
-'use client';
-
+import type { PageParserUIProps } from './PageParserUI.types';
 import { useParserStatus } from './useParserStatus';
-
-interface PageParserUIProps {
-  isAdmin?: boolean;
-}
 
 export function PageParserUI({ isAdmin }: PageParserUIProps) {
   const { parserStatus, currentLog, runParser } = useParserStatus();

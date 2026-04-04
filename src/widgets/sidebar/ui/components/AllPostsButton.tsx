@@ -1,7 +1,4 @@
-interface AllPostsButtonProps {
-  isActive: boolean;
-  onClick: () => void;
-}
+import type { AllPostsButtonProps } from './AllPostsButton.types';
 
 export function AllPostsButton({
   isActive,

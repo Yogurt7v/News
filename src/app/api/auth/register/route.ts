@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { getErrorMessage } from '@/shared/types/error';
+
+interface RegisterRequest {
+  email?: string;
+  password?: string;
+  passwordConfirm?: string;
+  name?: string;
+}
+
+interface PocketBaseError {
+  message?: string;
+  data?: Record<string, unknown>;
+}
 
 export async function POST(request: Request) {
   try {
     const { email, password, passwordConfirm, name } =
-      (await request.json()) as {
-        email?: string;
-        password?: string;
-        passwordConfirm?: string;
-        name?: string;
-      };
+      (await request.json()) as RegisterRequest;
 
     if (!email || !password || !passwordConfirm) {
       return NextResponse.json(
@@ -29,10 +37,9 @@ export async function POST(request: Request) {
       name,
     });
 
-    const authData = await pb.collection('users').authWithPassword(
-      email,
-      password
-    );
+    const authData = await pb
+      .collection('users')
+      .authWithPassword(email, password);
 
     const res = NextResponse.json(
       {
@@ -52,14 +59,14 @@ export async function POST(request: Request) {
     );
 
     return res;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const pbError = err as PocketBaseError;
     return NextResponse.json(
       {
-        error: err?.message || 'Registration failed',
-        data: err?.data,
+        error: getErrorMessage(err),
+        data: pbError.data,
       },
       { status: 400 }
     );
   }
 }
-

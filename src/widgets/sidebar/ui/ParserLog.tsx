@@ -1,9 +1,6 @@
 'use client';
 
-interface ParserLogProps {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  currentLog: string;
-}
+import type { ParserLogProps } from './ParserLog.types';
 
 export function ParserLog({ status, currentLog }: ParserLogProps) {
   if (status !== 'loading' || !currentLog) return null;

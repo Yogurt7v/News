@@ -1,14 +1,4 @@
-interface ChannelListItemProps {
-  channel: {
-    id: string;
-    username: string;
-    title: string;
-    avatar?: string;
-  };
-  isActive: boolean;
-  onClick: () => void;
-  onUnsubscribe: (e: React.MouseEvent) => void;
-}
+import type { ChannelListItemProps } from './ChannelListItem.types';
 
 export function ChannelListItem({
   channel,

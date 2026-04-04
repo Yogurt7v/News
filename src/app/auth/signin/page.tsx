@@ -8,12 +8,7 @@ import { Logo } from './ui/Logo';
 import { AuthDivider } from './ui/AuthDivider';
 import { OAuthButton } from './ui/OAuthButton';
 import { CredentialsForm } from './ui/CredentialsForm';
-
-export const dynamic = 'force-dynamic';
-
-interface SignInContentProps {
-  callbackUrl?: string;
-}
+import type { SignInContentProps } from './SignInContent.types';
 
 function SignInContent({
   callbackUrl: initialCallbackUrl,

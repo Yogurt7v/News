@@ -2,11 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-
-interface ErrorBoundaryProps {
-  error: Error & { digest?: string };
-  reset: () => void;
-}
+import type { ErrorBoundaryProps } from './error.types';
 
 export default function ErrorBoundary({
   error,

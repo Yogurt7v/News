@@ -1,15 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-export type ToastType = 'success' | 'error' | 'info';
-
-interface ToastProps {
-  message: string;
-  type?: ToastType;
-  duration?: number;
-  onClose: () => void;
-}
+import type { ToastProps, ToastType } from './Toast.types';
 
 export function Toast({
   message,
@@ -70,7 +62,7 @@ export function Toast({
   );
 }
 
-let toastCallback: ((message: string, type?: ToastType) => void) | null =
+const toastCallback: ((message: string, type?: ToastType) => void) | null =
   null;
 
 export function showToast(message: string, type: ToastType = 'success') {

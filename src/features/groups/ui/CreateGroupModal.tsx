@@ -1,5 +1,4 @@
-'use client';
-
+import type { CreateGroupModalProps } from './CreateGroupModal.types';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChannelInfo } from '@/entities';
@@ -9,12 +8,6 @@ import {
   ChannelCheckboxList,
   ModalFooter,
 } from './components';
-
-interface CreateGroupModalProps {
-  allChannels: ChannelInfo[];
-  onClose: () => void;
-  onSubmit: (name: string, selected: ChannelInfo[]) => Promise<void>;
-}
 
 export function CreateGroupModal({
   allChannels,

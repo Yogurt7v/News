@@ -1,9 +1,22 @@
-export interface TelegramPost {
-  id: number; // ID сообщения в канале
+export interface TelegramMessage {
+  id: number;
   date: Date;
-  message: string;
-  peerId: string; // идентификатор канала
-  channelUsername?: string;
-  media?: any; // позже можно обработать
-  publishedAt?: Date;
+  text?: string;
+  media?: unknown;
+  groupedId?: bigint;
+  chat?: TelegramChat;
 }
+
+export interface TelegramChat {
+  id: bigint;
+  title?: string;
+  username?: string;
+  _?: string;
+}
+
+export interface TelegramDialog {
+  chat?: TelegramChat;
+  entity?: TelegramChat;
+}
+
+export type { TelegramClient } from '@mtcute/node';

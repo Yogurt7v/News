@@ -1,7 +1,4 @@
-interface NewNewsIndicatorProps {
-  count: number;
-  onClick: () => void;
-}
+import type { NewNewsIndicatorProps } from './NewNewsIndicator.types';
 
 export function NewNewsIndicator({
   count,

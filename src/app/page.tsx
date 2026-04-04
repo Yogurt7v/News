@@ -3,12 +3,9 @@ import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { Wallpaper } from '@/widgets/wallpaper/ui/Wallpaper';
 import createServerClient from '@/shared/lib/pocketbase.server';
 import { PageContent } from './page/ui/PageContent';
+import type { PageProps } from './page.types';
 
 export const dynamic = 'force-dynamic';
-
-interface PageProps {
-  searchParams: Promise<{ channel?: string; group?: string }>;
-}
 
 export default async function HomePage({ searchParams }: PageProps) {
   const pb = await createServerClient();

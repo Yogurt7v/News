@@ -1,13 +1,6 @@
-import { ReactNode } from 'react';
+import type { SidebarSectionProps } from './SidebarSection.types';
 import { SectionHeader } from './SectionHeader';
 import { SectionDivider } from './SectionDivider';
-
-interface SidebarSectionProps {
-  title: string;
-  action?: { label: string; onClick: () => void };
-  showDivider?: boolean;
-  children: ReactNode;
-}
 
 export function SidebarSection({
   title,

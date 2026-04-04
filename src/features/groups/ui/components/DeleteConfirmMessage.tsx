@@ -1,3 +1,5 @@
+import type { DeleteConfirmMessageProps } from './DeleteConfirmMessage.types';
+
 export function DeleteConfirmIcon() {
   return (
     <div
@@ -7,10 +9,6 @@ export function DeleteConfirmIcon() {
       🗑️
     </div>
   );
-}
-
-interface DeleteConfirmMessageProps {
-  groupName: string;
 }
 
 export function DeleteConfirmMessage({

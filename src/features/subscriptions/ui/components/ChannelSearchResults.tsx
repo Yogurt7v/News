@@ -1,10 +1,5 @@
-import { ChannelSearchResult } from '@/entities';
+import type { ChannelSearchResultsProps } from './ChannelSearchResults.types';
 import { ChannelCard } from './ChannelCard';
-
-interface ChannelSearchResultsProps {
-  channels: ChannelSearchResult[];
-  onSelect: (channel: ChannelSearchResult) => void;
-}
 
 export function ChannelSearchResults({
   channels,

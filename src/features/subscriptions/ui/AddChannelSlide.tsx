@@ -1,5 +1,4 @@
-'use client';
-
+import type { AddChannelSlideProps } from './AddChannelSlide.types';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { subscribeToChannel } from '@/features/subscriptions/actions.pb';
 import { useDebounce } from '@/shared/lib/useDebounce';
@@ -12,12 +11,6 @@ import {
   AddChannelButton,
   SecurityInfo,
 } from './components';
-
-interface AddChannelSlideProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
 
 export function AddChannelSlide({
   isOpen,

@@ -74,6 +74,7 @@ export class TelegramParserService {
       limit: limit * 2,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupedMessages = new Map<string, any[]>();
     for (const msg of messages) {
       const groupId = msg.groupedId
@@ -88,7 +89,7 @@ export class TelegramParserService {
       `📦 [${username}] Найдено групп/постов: ${groupedMessages.size}`
     );
 
-    for (const [_, msgs] of groupedMessages) {
+    for (const [, msgs] of groupedMessages) {
       msgs.sort((a, b) => a.id - b.id);
       const mainMsg = msgs[0];
       const fullText = msgs
@@ -132,12 +133,15 @@ export class TelegramParserService {
     this.log(`🔍 [${channelTitle}] Ищу канал по названию...`);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let foundChat: any = null;
 
       // Ищем в диалогах пользователя
       for await (const dialog of client.iterDialogs({ limit: 200 })) {
-        const chat =
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        const chat: any =
           (dialog as any).entity || (dialog as any).chat || dialog;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
         if (
           chat &&
           chat.title?.toLowerCase().includes(channelTitle.toLowerCase())
@@ -165,6 +169,7 @@ export class TelegramParserService {
         limit: limit * 2,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const groupedMessages = new Map<string, any[]>();
       for (const msg of messages) {
         const groupId = msg.groupedId
@@ -181,16 +186,19 @@ export class TelegramParserService {
 
       const posts: TelegramPost[] = [];
 
-      for (const [_, msgs] of groupedMessages) {
+      for (const [, msgs] of groupedMessages) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         msgs.sort((a: any, b: any) => a.id - b.id);
         const mainMsg = msgs[0];
         const fullText = msgs
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((m: any) => m.text || '')
           .filter(Boolean)
           .join('\n')
           .trim();
         const allMedia: TelegramPostMedia[] = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (msgs.some((m: any) => m.media)) {
           for (const msg of msgs) {
             if (msg.media) {
@@ -220,10 +228,12 @@ export class TelegramParserService {
     }
   }
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   private async extractMedia(
     m: any,
     client: TelegramClient
   ): Promise<TelegramPostMedia | null> {
+    /* eslint-enable @typescript-eslint/no-explicit-any */
     let type: TelegramPostMedia['type'] | null = null;
     const mime = m.mimeType || '';
 
@@ -345,13 +355,15 @@ export class TelegramParserService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await fn();
-      } catch (e: any) {
-        lastError = e;
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errAny = e as any;
         const isNetworkError =
-          e.code === 'ECONNRESET' ||
-          e.message?.includes('ECONNRESET') ||
-          e.message?.includes('ETIMEDOUT') ||
-          e.message?.includes('socket');
+          errAny.code === 'ECONNRESET' ||
+          errAny.message?.includes('ECONNRESET') ||
+          errAny.message?.includes('ETIMEDOUT') ||
+          errAny.message?.includes('socket');
 
         if (isNetworkError && attempt < maxRetries) {
           this.log(
@@ -363,7 +375,7 @@ export class TelegramParserService {
         } else if (attempt === maxRetries) {
           console.error(
             `🔴 Все ${maxRetries} попыток исчерпаны. Ошибка:`,
-            e.message
+            lastError?.message
           );
         }
       }
@@ -402,9 +414,12 @@ export class TelegramParserService {
             this.log(`✨ Пост сохранен! (Всего: ${totalSaved})`);
           }
         }
-      } catch (e: any) {
-        lastError = e;
-        console.error(`🔴 Ошибка на канале ${channel}:`, e.message);
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
+        console.error(
+          `🔴 Ошибка на канале ${channel}:`,
+          lastError.message
+        );
       }
     }
 
@@ -472,7 +487,7 @@ export class TelegramParserService {
           `   ✅ Аватарка обновлена для ${subscriptions.length} подписки(ек)`
         );
         return;
-      } catch (e) {
+      } catch {
         // Продолжаем - попробуем другие способы
       }
     }

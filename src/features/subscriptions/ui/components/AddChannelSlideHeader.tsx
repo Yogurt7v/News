@@ -1,6 +1,4 @@
-interface AddChannelSlideHeaderProps {
-  onClose: () => void;
-}
+import type { AddChannelSlideHeaderProps } from './AddChannelSlideHeader.types';
 
 export function AddChannelSlideHeader({
   onClose,

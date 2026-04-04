@@ -1,7 +1,4 @@
-interface GroupNameInputProps {
-  value: string;
-  onChange: (value: string) => void;
-}
+import type { GroupNameInputProps } from './GroupNameInput.types';
 
 export function GroupNameInput({ value, onChange }: GroupNameInputProps) {
   return (

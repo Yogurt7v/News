@@ -1,6 +1,4 @@
-interface ChannelTypeIconProps {
-  type: 'channel' | 'group';
-}
+import type { ChannelTypeIconProps } from './ChannelTypeIcon.types';
 
 export function ChannelTypeIcon({ type }: ChannelTypeIconProps) {
   if (type === 'channel') {

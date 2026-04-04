@@ -1,10 +1,7 @@
-import { ChannelInfo } from '@/entities';
-
-interface ChannelCheckboxProps {
-  channel: ChannelInfo;
-  isSelected: boolean;
-  onToggle: () => void;
-}
+import type {
+  ChannelCheckboxProps,
+  ChannelCheckboxListProps,
+} from './ChannelCheckboxList.types';
 
 function ChannelCheckbox({
   channel,
@@ -31,12 +28,6 @@ function ChannelCheckbox({
       </div>
     </label>
   );
-}
-
-interface ChannelCheckboxListProps {
-  channels: ChannelInfo[];
-  selected: ChannelInfo[];
-  onToggle: (channel: ChannelInfo) => void;
 }
 
 export function ChannelCheckboxList({

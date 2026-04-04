@@ -1,6 +1,4 @@
-interface ParticipantCountProps {
-  count: number;
-}
+import type { ParticipantCountProps } from './ParticipantCount.types';
 
 export function ParticipantCount({ count }: ParticipantCountProps) {
   const formatCount = (num: number): string => {

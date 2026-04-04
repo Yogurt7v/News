@@ -1,8 +1,6 @@
 'use client';
 
-interface NoSubscriptionsProps {
-  hasSubscriptions: boolean;
-}
+import type { NoSubscriptionsProps } from './NoSubscriptions.types';
 
 export function NoSubscriptions({
   hasSubscriptions,

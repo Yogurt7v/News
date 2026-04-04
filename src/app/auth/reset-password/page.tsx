@@ -43,8 +43,10 @@ function ResetPasswordForm() {
       setTimeout(() => {
         router.push('/auth/signin');
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Ошибка при сбросе пароля');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Ошибка при сбросе пароля';
+      setError(message);
     } finally {
       setLoading(false);
     }

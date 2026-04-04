@@ -28,7 +28,7 @@ export async function GET(
     }
     headers.set('Cache-Control', 'public, max-age=86400');
 
-    return new NextResponse(response.body as any, {
+    return new NextResponse(response.body, {
       status: 200,
       headers,
     });

@@ -3,18 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
-interface FastVideoProps {
-  src: string;
-  className?: string;
-  poster?: string;
-  autoPlay?: boolean;
-  muted?: boolean;
-  playsInline?: boolean;
-  controls?: boolean;
-  lazy?: boolean;
-  onLoad?: () => void;
-  onError?: () => void;
-}
+import type { FastVideoProps } from './FastVideo.types';
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1500;
@@ -141,6 +130,7 @@ export function FastVideo({
         URL.revokeObjectURL(thumbnailUrl);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, poster]);
 
   return (

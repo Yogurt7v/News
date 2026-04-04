@@ -21,14 +21,7 @@ import { SidebarController } from './SidebarController';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import { ChannelInfo, GroupWithChannels } from './types';
-
-interface ConfirmData {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  variant: 'primary' | 'danger';
-}
+import type { ConfirmData } from './Sidebar.types';
 
 export function Sidebar() {
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
@@ -91,7 +84,9 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    loadInitialData();
+    (async () => {
+      await loadInitialData();
+    })();
   }, []);
 
   const refreshData = async () => {

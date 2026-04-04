@@ -1,20 +1,4 @@
-import { useState } from 'react';
-import { GroupInfo, ChannelInfo } from '../types';
-
-interface GroupListItemProps {
-  group: GroupInfo;
-  isActive: boolean;
-  isEditing: boolean;
-  editName: string;
-  onClick: () => void;
-  onEditStart: () => void;
-  onEditChange: (name: string) => void;
-  onEditSubmit: () => void;
-  onDelete: () => void;
-  showChannels?: boolean;
-  channels?: ChannelInfo[];
-  onRemoveChannel?: (channel: ChannelInfo) => void;
-}
+import type { GroupListItemProps } from './GroupListItem.types';
 
 export function GroupListItem({
   group,

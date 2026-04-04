@@ -1,8 +1,4 @@
-interface ModalHeaderProps {
-  label: string;
-  title: string;
-  onClose: () => void;
-}
+import type { ModalHeaderProps } from './ModalHeader.types';
 
 export function ModalHeader({ label, title, onClose }: ModalHeaderProps) {
   return (

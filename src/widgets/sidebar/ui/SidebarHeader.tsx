@@ -1,8 +1,6 @@
 'use client';
 
-interface SidebarHeaderProps {
-  onAddClick: () => void;
-}
+import type { SidebarHeaderProps } from './SidebarHeader.types';
 
 export function SidebarHeader({ onAddClick }: SidebarHeaderProps) {
   return (

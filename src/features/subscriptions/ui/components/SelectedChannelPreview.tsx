@@ -1,14 +1,6 @@
-import { ChannelSearchResult } from '@/entities';
+import type { SelectedChannelPreviewProps } from './SelectedChannelPreview.types';
 import { ChannelTypeIcon } from './ChannelTypeIcon';
 import { ParticipantCount } from './ParticipantCount';
-
-interface SelectedChannelPreviewProps {
-  channel: ChannelSearchResult;
-  onSubscribe: () => void;
-  onBack: () => void;
-  isLoading: boolean;
-  error?: string | null;
-}
 
 export function SelectedChannelPreview({
   channel,

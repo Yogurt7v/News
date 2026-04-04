@@ -1,13 +1,6 @@
 'use client';
 
-interface ConfirmModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  variant?: 'primary' | 'danger';
-}
+import type { ConfirmModalProps } from './ConfirmModal.types';
 
 export function ConfirmModal({
   isOpen,

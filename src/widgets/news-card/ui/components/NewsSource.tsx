@@ -1,7 +1,4 @@
-interface NewsSourceProps {
-  channelTitle: string;
-  source: string;
-}
+import type { NewsSourceProps } from './NewsSource.types';
 
 export function NewsSource({ channelTitle, source }: NewsSourceProps) {
   const displayTitle = channelTitle?.length > 0 ? channelTitle : source;

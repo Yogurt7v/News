@@ -1,11 +1,6 @@
-import { ChannelSearchResult } from '@/entities';
+import type { ChannelCardProps } from './ChannelCard.types';
 import { ChannelTypeIcon } from './ChannelTypeIcon';
 import { ParticipantCount } from './ParticipantCount';
-
-interface ChannelCardProps {
-  channel: ChannelSearchResult;
-  onClick: () => void;
-}
 
 export function ChannelCard({ channel, onClick }: ChannelCardProps) {
   return (

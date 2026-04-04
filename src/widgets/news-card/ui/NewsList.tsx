@@ -11,25 +11,7 @@ import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
 import { useNewsSubscription } from '@/shared/lib/useNewsSubscription';
 
-interface NewsListProps {
-  initialNews: Array<{
-    id: string;
-    title: string;
-    content: string;
-    source: string;
-    url: string;
-    imageUrl?: string;
-    publishedAt?: string;
-    expand?: Record<string, unknown>;
-    media?: Array<{
-      type: string;
-      file: string;
-      order?: number;
-      id: string;
-    }>;
-    [key: string]: unknown;
-  }>;
-}
+import type { NewsListProps } from './NewsList.types';
 
 export function NewsList({ initialNews }: NewsListProps) {
   const [news, setNews] = useState(initialNews);

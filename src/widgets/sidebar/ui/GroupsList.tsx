@@ -1,24 +1,6 @@
 'use client';
 
-import { ChannelInfo, GroupWithChannels } from '@/entities';
-
-interface GroupsListProps {
-  groups: GroupWithChannels[];
-  currentGroupId: string | null;
-  editingGroupId: string | null;
-  editName: string;
-  searchParams: URLSearchParams;
-  onGroupClick: (groupId: string) => void;
-  onEditStart: (groupId: string, name: string) => void;
-  onEditChange: (name: string) => void;
-  onEditSubmit: (groupId: string) => void;
-  onDeleteClick: (groupId: string, name: string) => void;
-  onRemoveChannel: (
-    e: React.MouseEvent,
-    groupId: string,
-    channel: ChannelInfo
-  ) => void;
-}
+import type { GroupsListProps } from './GroupsList.types';
 
 export function GroupsList({
   groups,
@@ -33,7 +15,7 @@ export function GroupsList({
   onDeleteClick,
   onRemoveChannel,
 }: GroupsListProps) {
-  const pathname = '';
+  // pathname is kept for future use when routing is needed
 
   return (
     <>

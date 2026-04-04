@@ -1,8 +1,4 @@
-interface OAuthButtonProps {
-  provider: 'google' | 'yandex' | 'github';
-  onClick: () => void;
-  isLoading: boolean;
-}
+import type { OAuthButtonProps } from './OAuthButton.types';
 
 const providerConfig = {
   google: {

@@ -34,16 +34,19 @@ function RegisterContent() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const pocketbaseError = (data as any)?.data?.data;
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          data?: { data?: { email?: { code: string } } };
+        };
+        const pocketbaseError = data?.data?.data;
         if (pocketbaseError?.email?.code === 'validation_invalid_email') {
           setError('Некорректный формат Email');
         } else if (
           pocketbaseError?.email?.code === 'validation_not_unique'
         ) {
           setError('Этот Email уже зарегистрирован');
-        } else if (typeof (data as any)?.error === 'string') {
-          setError((data as any).error);
+        } else if (typeof data?.error === 'string') {
+          setError(data.error);
         } else {
           setError('Ошибка при регистрации');
         }
@@ -52,8 +55,10 @@ function RegisterContent() {
 
       router.push('/');
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || 'Ошибка при регистрации');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Ошибка при регистрации';
+      setError(message);
     } finally {
       setLoading(false);
     }

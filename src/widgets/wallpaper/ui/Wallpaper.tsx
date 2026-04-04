@@ -1,8 +1,6 @@
 'use client';
 
-interface WallpaperProps {
-  children: React.ReactNode;
-}
+import type { WallpaperProps } from './Wallpaper.types';
 
 export function Wallpaper({ children }: WallpaperProps) {
   return (

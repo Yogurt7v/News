@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { getErrorMessage } from '@/shared/types/error';
+
+interface OAuthProvider {
+  name: string;
+  authURL: string;
+  state: string;
+  codeVerifier: string;
+}
+
+interface AuthMethods {
+  oauth2?: {
+    providers?: OAuthProvider[];
+  };
+}
 
 export async function GET(
   request: NextRequest,
@@ -14,9 +28,11 @@ export async function GET(
   const redirectUrl = `${siteUrl}/api/auth/oauth/callback`;
 
   try {
-    const methods = await pb.collection('users').listAuthMethods();
-    const p = methods?.oauth2?.providers.find(
-      (x: any) => x.name === provider
+    const methods = (await pb
+      .collection('users')
+      .listAuthMethods()) as AuthMethods;
+    const p = methods?.oauth2?.providers?.find(
+      (x: OAuthProvider) => x.name === provider
     );
 
     if (!p)
@@ -48,7 +64,10 @@ export async function GET(
     );
 
     return response;
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: getErrorMessage(err) },
+      { status: 500 }
+    );
   }
 }

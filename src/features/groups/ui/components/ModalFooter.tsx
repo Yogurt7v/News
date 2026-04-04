@@ -1,10 +1,4 @@
-interface ModalFooterProps {
-  onCancel: () => void;
-  onConfirm: () => void;
-  confirmLabel: string;
-  isLoading?: boolean;
-  variant?: 'primary' | 'danger';
-}
+import type { ModalFooterProps } from './ModalFooter.types';
 
 export function ModalFooter({
   onCancel,

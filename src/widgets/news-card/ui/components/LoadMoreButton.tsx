@@ -1,7 +1,4 @@
-interface LoadMoreButtonProps {
-  isLoading: boolean;
-  onClick: () => void;
-}
+import type { LoadMoreButtonProps } from './LoadMoreButton.types';
 
 export function LoadMoreButton({
   isLoading,

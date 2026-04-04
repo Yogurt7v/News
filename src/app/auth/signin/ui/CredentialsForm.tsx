@@ -1,13 +1,5 @@
-// import Link from 'next/link';
-
+import type { CredentialsFormProps } from './CredentialsForm.types';
 import Link from 'next/link';
-
-interface CredentialsFormProps {
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  loading: boolean;
-  error: string;
-  onBack: () => void;
-}
 
 export function CredentialsForm({
   onSubmit,

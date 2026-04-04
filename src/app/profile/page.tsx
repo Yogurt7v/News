@@ -8,7 +8,11 @@ export default async function ProfilePage() {
     redirect('/auth/signin');
   }
 
-  const user = pb.authStore.record as any;
+  const user = pb.authStore.record as unknown as {
+    name?: string;
+    email: string;
+    role?: string;
+  } | null;
 
   return (
     <div className="container mx-auto p-4">

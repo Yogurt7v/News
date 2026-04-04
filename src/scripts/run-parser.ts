@@ -1,16 +1,14 @@
 import { createAdminClient } from '../shared/lib/pocketbase-admin';
 import { TelegramParserService } from '../features/telegram-parser/parser.service';
+import { getErrorMessage } from '../shared/types/error';
 
 async function run() {
   console.log('🚀 Инициализация системного парсера...');
 
-  // 1. Создаем админ-клиент для доступа к базе
   const pb = await createAdminClient();
   const parser = new TelegramParserService();
 
   try {
-    // 2. Получаем все уникальные подписки из коллекции 'subscriptions'
-    // Предполагаем, что у тебя есть коллекция 'subscriptions' с полем 'name' или 'username'
     console.log('📂 Получаю список каналов из базы...');
     const subscriptions = await pb
       .collection('subscriptions')
@@ -18,11 +16,10 @@ async function run() {
         sort: '-created',
       });
 
-    // Извлекаем только юзернеймы и убираем дубликаты
     const channelUsernames = [
       ...new Set(
         subscriptions
-          .map((sub) => sub.channelUsername?.replace('@', '').trim()) // исправлено на channelUsername
+          .map((sub) => sub.channelUsername?.replace('@', '').trim())
           .filter(Boolean)
       ),
     ];
@@ -38,14 +35,13 @@ async function run() {
       `📡 Список каналов к парсингу: [ ${channelUsernames.join(', ')} ]`
     );
 
-    // 3. Запускаем парсинг для этих каналов
     const count = await parser.fetchAndSaveNews(channelUsernames);
 
     console.log(`\n✅ Готово! Сохранено новых постов: ${count}`);
     process.exit(0);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('❌ Критическая ошибка при работе парсера:');
-    console.error(e.message);
+    console.error(getErrorMessage(e));
     process.exit(1);
   }
 }

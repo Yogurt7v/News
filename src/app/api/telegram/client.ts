@@ -5,7 +5,7 @@ import input from 'input';
 const apiId = Number(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH || '';
 
-let sessionString = process.env.TELEGRAM_SESSION || '';
+const sessionString = process.env.TELEGRAM_SESSION || '';
 
 const stringSession = new StringSession(sessionString);
 

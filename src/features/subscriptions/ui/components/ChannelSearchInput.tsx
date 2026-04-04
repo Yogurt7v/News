@@ -1,9 +1,4 @@
-interface ChannelSearchInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onClear: () => void;
-  isLoading: boolean;
-}
+import type { ChannelSearchInputProps } from './ChannelSearchInput.types';
 
 export function ChannelSearchInput({
   value,

@@ -1,8 +1,4 @@
-interface NewsContentProps {
-  title: string;
-  content?: string;
-  url: string;
-}
+import type { NewsContentProps } from './NewsContent.types';
 
 export function NewsContent({ title, content, url }: NewsContentProps) {
   return (
