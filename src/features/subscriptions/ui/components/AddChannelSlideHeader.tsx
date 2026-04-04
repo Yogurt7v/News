@@ -2,6 +2,8 @@ import type { AddChannelSlideHeaderProps } from './AddChannelSlideHeader.types';
 
 export function AddChannelSlideHeader({
   onClose,
+  remainingSlots,
+  maxCount,
 }: AddChannelSlideHeaderProps) {
   return (
     <div className="p-6 border-b border-black/5 dark:border-white/10">
@@ -10,6 +12,11 @@ export function AddChannelSlideHeader({
           <h2 className="text-xl font-bold mt-1 text-foreground">
             Подписка на канал
           </h2>
+          {remainingSlots !== undefined && maxCount !== undefined && (
+            <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+              Осталось слотов: {remainingSlots} / {maxCount}
+            </p>
+          )}
         </div>
         <button
           type="button"
