@@ -275,6 +275,8 @@ export function Sidebar() {
 
       <AddChannelSlide
         isOpen={showAddForm}
+        currentCount={channels.length}
+        maxCount={10}
         onClose={() => setShowAddForm(false)}
         onSuccess={() => {
           setShowAddForm(false);

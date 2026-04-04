@@ -1,14 +1,16 @@
 export function AddChannelButton({
   disabled,
   isPending,
+  isLimitReached,
 }: {
   disabled?: boolean;
   isPending?: boolean;
+  isLimitReached?: boolean;
 }) {
   return (
     <button
       type="submit"
-      disabled={isPending || disabled}
+      disabled={isPending || disabled || isLimitReached}
       className="w-full py-4 rounded-2xl bg-[#0071e3] hover:bg-[#005bb5] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-[#0071e3]/25 active:scale-[0.98]"
     >
       {isPending ? (
@@ -34,6 +36,8 @@ export function AddChannelButton({
           </svg>
           Добавление...
         </span>
+      ) : isLimitReached ? (
+        'Лимит подписок исчерпан'
       ) : (
         'Добавить канал'
       )}

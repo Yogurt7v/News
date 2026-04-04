@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import createServerClient from '@/shared/lib/pocketbase.server';
 
+const MAX_SUBSCRIPTIONS = 10;
+
 interface ChannelInfo {
   id: string;
   username: string;
@@ -32,8 +34,19 @@ export async function subscribeToChannel(
   const userId = await getCurrentUserId();
   const cleanUsername = channelUsername.replace(/^@/, '').trim();
 
+  const pb = await createServerClient();
+
+  // Проверка лимита подписок
+  const currentCount = await pb.collection('subscriptions').getList(1, 1, {
+    filter: `userId = "${userId}"`,
+  });
+  if (currentCount.totalItems >= MAX_SUBSCRIPTIONS) {
+    throw new Error(
+      `Достигнут лимит подписок (${MAX_SUBSCRIPTIONS}). Удалите существующие подписки для добавления новых.`
+    );
+  }
+
   try {
-    const pb = await createServerClient();
     await pb.collection('subscriptions').create({
       userId,
       channelUsername: cleanUsername,

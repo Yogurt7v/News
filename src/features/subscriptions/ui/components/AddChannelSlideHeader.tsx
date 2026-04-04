@@ -7,9 +7,6 @@ export function AddChannelSlideHeader({
     <div className="p-6 border-b border-black/5 dark:border-white/10">
       <div className="flex items-center justify-between">
         <div className="animate-fade-in-up">
-          <p className="text-[11px] font-semibold tracking-wide text-black/40 dark:text-white/40 uppercase">
-            Добавить канал
-          </p>
           <h2 className="text-xl font-bold mt-1 text-foreground">
             Подписка на канал
           </h2>

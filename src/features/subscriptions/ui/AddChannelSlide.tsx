@@ -16,7 +16,11 @@ export function AddChannelSlide({
   isOpen,
   onClose,
   onSuccess,
+  currentCount,
+  maxCount,
 }: AddChannelSlideProps) {
+  const remainingSlots = maxCount - currentCount;
+  const isLimitReached = remainingSlots <= 0;
   const [state, formAction, isPending] = useActionState(
     async (prevState: { error?: string } | null, formData: FormData) => {
       try {
@@ -154,7 +158,11 @@ export function AddChannelSlide({
       <div className="fixed top-0 left-0 bottom-0 w-[400px] max-w-full z-[200] animate-slide-in-left">
         <div className="h-full flex flex-col bg-white/80 dark:bg-[#1c1c1e]/90 backdrop-blur-xl border-l border-black/5 dark:border-white/5">
           <form action={formAction} className="h-full flex flex-col">
-            <AddChannelSlideHeader onClose={onClose} />
+            <AddChannelSlideHeader
+              onClose={onClose}
+              remainingSlots={remainingSlots}
+              maxCount={maxCount}
+            />
 
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               <div
@@ -241,9 +249,13 @@ export function AddChannelSlide({
                       {state.error}
                     </p>
                   )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
+                    Осталось {remainingSlots} подписок из {maxCount}
+                  </p>
                   <AddChannelButton
                     disabled={!query}
                     isPending={isPending}
+                    isLimitReached={isLimitReached}
                   />
                 </>
               )}
