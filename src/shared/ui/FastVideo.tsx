@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 
 interface FastVideoProps {
   src: string;
@@ -14,6 +15,9 @@ interface FastVideoProps {
   onLoad?: () => void;
   onError?: () => void;
 }
+
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 1500;
 
 export function FastVideo({
   src,
@@ -34,6 +38,23 @@ export function FastVideo({
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(!lazy);
   const [videoError, setVideoError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [key, setKey] = useState(0);
+
+  const handleRetry = useCallback(() => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount((prev) => prev + 1);
+      setVideoError(false);
+      setIsLoading(true);
+      setKey((prev) => prev + 1);
+    }
+  }, [retryCount]);
+
+  const handleFallback = useCallback(() => {
+    setVideoError(true);
+    setIsLoading(false);
+    onError?.();
+  }, [onError]);
 
   useEffect(() => {
     if (!lazy) return;
@@ -125,26 +146,48 @@ export function FastVideo({
   return (
     <div className={`relative ${className}`}>
       <video
+        key={`thumb-${key}`}
         ref={thumbnailVideoRef}
         src={src}
         preload="metadata"
         className="hidden"
         aria-hidden="true"
       />
-      {isLoading && !isThumbnailReady && (
+      {isLoading && !isThumbnailReady && !videoError && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
           <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {videoError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white text-sm">
-          Ошибка загрузки видео
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white">
+          {thumbnailUrl ? (
+            <>
+              <Image
+                src={thumbnailUrl}
+                alt="Video preview"
+                fill
+                className="object-contain opacity-50"
+                unoptimized
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <button
+                  onClick={handleRetry}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium backdrop-blur-sm transition-colors"
+                >
+                  Попробовать ещё раз
+                </button>
+              </div>
+            </>
+          ) : (
+            <span className="text-sm">Ошибка загрузки видео</span>
+          )}
         </div>
       )}
       <video
+        key={`video-${key}`}
         ref={videoRef}
         src={shouldLoad ? src : undefined}
-        poster={thumbnailUrl || undefined}
+        poster={!videoError ? thumbnailUrl || undefined : undefined}
         autoPlay={autoPlay}
         muted={muted}
         playsInline={playsInline}
@@ -154,6 +197,7 @@ export function FastVideo({
         onLoadStart={() => setIsLoading(true)}
         onCanPlay={() => {
           setIsLoading(false);
+          setRetryCount(0);
           onLoad?.();
         }}
         onLoadedMetadata={() => {
@@ -162,9 +206,13 @@ export function FastVideo({
           }
         }}
         onError={() => {
-          setVideoError(true);
-          setIsLoading(false);
-          onError?.();
+          if (retryCount < MAX_RETRIES) {
+            setTimeout(() => {
+              handleRetry();
+            }, RETRY_DELAY);
+          } else {
+            handleFallback();
+          }
         }}
       >
         <source src={src} type="video/mp4" />
