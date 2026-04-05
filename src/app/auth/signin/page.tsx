@@ -30,7 +30,10 @@ function SignInContent({
     let alive = true;
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch(
+          'https://be-informed.ru/api/collections/users/auth-with-password',
+          { cache: 'no-store' }
+        );
         if (!res.ok) return;
         const data = await res.json();
         if (!alive) return;
