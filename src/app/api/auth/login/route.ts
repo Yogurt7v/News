@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 
 export async function POST(request: Request) {
+  console.log('POCKETBASE_URL:', process.env.POCKETBASE_URL);
   const domain =
     process.env.NODE_ENV === 'production' ? '.be-informed.ru' : undefined;
-
   try {
     const { email, password } = (await request.json()) as {
       email?: string;
