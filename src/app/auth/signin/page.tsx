@@ -60,14 +60,11 @@ function SignInContent({
     const password = String(formData.get('password') || '');
 
     try {
-      const res = await fetch(
-        'https://be-informed.ru/api/collections/users/auth-with-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch('api/collections/users/auth-with-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: email, password }),
+      });
       if (!res.ok) {
         setError('Неверный email или пароль');
         return;
