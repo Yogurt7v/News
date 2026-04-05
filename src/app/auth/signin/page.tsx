@@ -60,7 +60,7 @@ function SignInContent({
     const password = String(formData.get('password') || '');
 
     try {
-      const res = await fetch('api/collections/users/auth-with-password', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identity: email, password }),
