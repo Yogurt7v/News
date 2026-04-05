@@ -28,6 +28,7 @@ function SignInContent({
 
   useEffect(() => {
     let alive = true;
+    console.log('POCKETBASE_URL:', process.env.POCKETBASE_URL);
     const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
