@@ -2,7 +2,7 @@ import PocketBase from 'pocketbase';
 
 export async function createAdminClient() {
   const pb = new PocketBase(
-    process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
+    process.env.POCKETBASE_URL || 'http://5.53.125.238:8090'
   );
 
   // Обязательно добавляем await

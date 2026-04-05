@@ -40,7 +40,7 @@ export function NewsList({ initialNews }: NewsListProps) {
 
   useNewsSubscription({
     pbUrl:
-      process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090',
+      process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090',
     onNewNews: handleNewNews,
     enabled: true,
   });
