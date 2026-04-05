@@ -30,10 +30,7 @@ function SignInContent({
     let alive = true;
     const checkAuth = async () => {
       try {
-        const res = await fetch(
-          'https://be-informed.ru/api/collections/users/auth-with-password',
-          { cache: 'no-store' }
-        );
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (!alive) return;
@@ -63,11 +60,14 @@ function SignInContent({
     const password = String(formData.get('password') || '');
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(
+        'https://be-informed.ru/api/collections/users/auth-with-password',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        }
+      );
       if (!res.ok) {
         setError('Неверный email или пароль');
         return;
