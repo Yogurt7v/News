@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const res = await fetch(
-      `${process.env.POCKETBASE_URL}/api/collections/users/auth-with-oauth2`,
+      `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/collections/users/auth-with-oauth2`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

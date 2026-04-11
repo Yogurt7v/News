@@ -6,7 +6,7 @@ export async function GET(
 ) {
   const { path } = await params;
   const pocketbaseUrl =
-    process.env.POCKETBASE_URL || 'http://5.53.125.238:8090';
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
 
   const filePath = path.join('/');
   const url = `${pocketbaseUrl}/api/files/${filePath}`;

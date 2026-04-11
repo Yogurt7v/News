@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 
 export async function POST(request: Request) {
-  console.log('POCKETBASE_URL:', process.env.POCKETBASE_URL);
   const domain =
     process.env.NODE_ENV === 'production' ? '.be-informed.ru' : undefined;
   try {
@@ -19,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     const pb = new PocketBase(
-      process.env.POCKETBASE_URL || 'http://5.53.125.238:8090'
+      process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090'
     );
 
     const authData = await pb

@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   //  если будут проблемы с CORS или путями
   experimental: {
     serverComponentsExternalPackages: ['@mtcute/node', '@mtcute/wasm'],
+    serverActions: {
+      allowedOrigins: ['be-informed.ru'],
+    },
   },
 };
 
