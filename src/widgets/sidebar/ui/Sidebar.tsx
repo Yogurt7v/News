@@ -4,16 +4,121 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
 import { AddChannelSlide } from '@/features/subscriptions/ui/AddChannelSlide';
-import {
-  unsubscribeFromChannel,
-  getUserSubscriptions,
-  getUserGroups,
-  createGroup,
-  deleteGroup,
-  addChannelToGroup,
-  removeChannelFromGroup,
-  renameGroup,
-} from '@/features/subscriptions/actions.pb';
+// API helper functions
+const apiSubscribeToChannel = async (
+  channelUsername: string,
+  channelTitle?: string
+) => {
+  const res = await fetch('/api/subscriptions/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelUsername, channelTitle }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при подписке');
+  }
+};
+
+const apiUnsubscribeFromChannel = async (channelUsername: string) => {
+  const res = await fetch(
+    `/api/subscriptions/unsubscribe?channelUsername=${encodeURIComponent(channelUsername)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при отписке');
+  }
+};
+
+const apiGetUserSubscriptions = async () => {
+  const res = await fetch('/api/subscriptions/my');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при получении подписок');
+  }
+  return res.json();
+};
+
+const apiGetUserGroups = async () => {
+  const res = await fetch('/api/groups');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при получении групп');
+  }
+  return res.json();
+};
+
+const apiCreateGroup = async (name: string) => {
+  const res = await fetch('/api/groups', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при создании группы');
+  }
+  return res.json();
+};
+
+const apiDeleteGroup = async (groupId: string) => {
+  const res = await fetch(`/api/groups/${groupId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при удалении группы');
+  }
+};
+
+const apiAddChannelToGroup = async (
+  groupId: string,
+  channelUsername: string,
+  channelTitle?: string
+) => {
+  const res = await fetch(`/api/groups/${groupId}/channels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelUsername, channelTitle }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(
+      error.error || 'Ошибка при добавлении канала в группу'
+    );
+  }
+};
+
+const apiRemoveChannelFromGroup = async (
+  groupId: string,
+  channelUsername: string
+) => {
+  const res = await fetch(
+    `/api/groups/${groupId}/channels?channelUsername=${encodeURIComponent(channelUsername)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при удалении канала из группы');
+  }
+};
+
+const apiRenameGroup = async (groupId: string, name: string) => {
+  const res = await fetch(`/api/groups/${groupId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при переименовании группы');
+  }
+};
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarContent } from './SidebarContent';
 import { SidebarFooter } from './SidebarFooter';
@@ -73,8 +178,8 @@ export function Sidebar() {
   const loadInitialData = async () => {
     try {
       const [channelsList, groupsList] = await Promise.all([
-        getUserSubscriptions(),
-        getUserGroups(),
+        apiGetUserSubscriptions(),
+        apiGetUserGroups(),
       ]);
       setChannels(channelsList);
       setGroups(groupsList);
@@ -127,7 +232,7 @@ export function Sidebar() {
   const handleRenameGroup = async (id: string) => {
     if (!editName.trim()) return setEditingGroupId(null);
     try {
-      await renameGroup(id, editName);
+      await apiRenameGroup(id, editName);
       setEditingGroupId(null);
       refreshData();
     } catch {
@@ -144,7 +249,7 @@ export function Sidebar() {
       'Отписаться?',
       `Вы уверены, что хотите отписаться от "${channel.title}"?`,
       async () => {
-        await unsubscribeFromChannel(channel.username);
+        await apiUnsubscribeFromChannel(channel.username);
         if (currentChannel === channel.username) router.push(pathname);
         refreshData();
       },
@@ -162,7 +267,7 @@ export function Sidebar() {
       'Убрать из папки?',
       `Убрать "${channel.title}" из этой папки? (Подписка останется)`,
       async () => {
-        await removeChannelFromGroup(groupId, channel.username);
+        await apiRemoveChannelFromGroup(groupId, channel.username);
         refreshData();
       }
     );
@@ -172,9 +277,9 @@ export function Sidebar() {
     name: string,
     selectedChannels: ChannelInfo[]
   ) => {
-    const newGroup = await createGroup(name);
+    const newGroup = await apiCreateGroup(name);
     for (const ch of selectedChannels) {
-      await addChannelToGroup(newGroup.id, ch.username, ch.title);
+      await apiAddChannelToGroup(newGroup.id, ch.username, ch.title);
     }
   };
 
@@ -265,7 +370,7 @@ export function Sidebar() {
           groupName={groupToDelete.name}
           onClose={() => setGroupToDelete(null)}
           onConfirm={async () => {
-            await deleteGroup(groupToDelete.id);
+            await apiDeleteGroup(groupToDelete.id);
             if (currentGroupId === groupToDelete.id) router.push(pathname);
             setGroupToDelete(null);
             refreshData();

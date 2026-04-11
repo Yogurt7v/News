@@ -1,6 +1,20 @@
 import type { AddChannelSlideProps } from './AddChannelSlide.types';
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { subscribeToChannel } from '@/features/subscriptions/actions.pb';
+// API helper function
+const apiSubscribeToChannel = async (
+  channelUsername: string,
+  channelTitle?: string
+) => {
+  const res = await fetch('/api/subscriptions/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelUsername, channelTitle }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Ошибка при подписке');
+  }
+};
 import { useDebounce } from '@/shared/lib/useDebounce';
 import { ChannelSearchResult } from '@/entities';
 import {
@@ -26,7 +40,7 @@ export function AddChannelSlide({
       try {
         const username = formData.get('username') as string;
         const title = formData.get('channelTitle') as string;
-        await subscribeToChannel(username, title);
+        await apiSubscribeToChannel(username, title);
         return { error: undefined };
       } catch (error: unknown) {
         const message =
@@ -119,7 +133,7 @@ export function AddChannelSlide({
     setError(null);
     try {
       const username = selectedChannel.username || selectedChannel.title;
-      await subscribeToChannel(username, selectedChannel.title);
+      await apiSubscribeToChannel(username, selectedChannel.title);
       onSuccess?.();
       onClose();
     } catch (err) {
