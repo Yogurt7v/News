@@ -13,12 +13,16 @@ const nextConfig: NextConfig = {
   reactCompiler: false,
 
   serverExternalPackages: ['@mtcute/node', '@mtcute/wasm'],
+  allowedDevOrigins: [
+    'be-informed.ru',
+    'news-yogurt7vs-projects.vercel.app',
+  ],
 
   //  если будут проблемы с CORS или путями
   experimental: {
     serverComponentsExternalPackages: ['@mtcute/node', '@mtcute/wasm'],
     serverActions: {
-      allowedOrigins: ['be-informed.ru'],
+      allowedOrigins: ['*'], // опасно!
     },
   },
 };
