@@ -18,7 +18,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const pb = new PocketBase(process.env.POCKETBASE_URL!);
+  const pb = new PocketBase(
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090'
+  );
 
   // 2. ЗАГРУЗКА СЕССИИ
   // Получаем значение куки напрямую
