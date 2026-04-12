@@ -24,12 +24,6 @@ export function ConfirmModal({
         </p>
         <div className="flex gap-3">
           <button
-            onClick={onClose}
-            className="flex-1 px-5 py-3 rounded-2xl bg-black/5 dark:bg-white/10 text-sm font-semibold hover:bg-black/10 dark:hover:bg-white/15 transition-all"
-          >
-            Отмена
-          </button>
-          <button
             onClick={() => {
               onConfirm();
               onClose();
@@ -41,6 +35,12 @@ export function ConfirmModal({
             }`}
           >
             Подтвердить
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-5 py-3 rounded-2xl bg-black/5 dark:bg-white/10 text-sm font-semibold hover:bg-black/10 dark:hover:bg-white/15 transition-all"
+          >
+            Отмена
           </button>
         </div>
       </div>
