@@ -6,7 +6,11 @@ export async function GET() {
   const pbAuth = cookieStore.get('pb_auth');
 
   if (!pbAuth) {
-    return NextResponse.json({ authenticated: false, user: null });
+    return NextResponse.json({
+      authenticated: false,
+      user: null,
+      token: null,
+    });
   }
 
   try {
@@ -14,8 +18,13 @@ export async function GET() {
     return NextResponse.json({
       authenticated: !!data.model,
       user: data.model || null,
+      token: data.token || null,
     });
   } catch {
-    return NextResponse.json({ authenticated: false, user: null });
+    return NextResponse.json({
+      authenticated: false,
+      user: null,
+      token: null,
+    });
   }
 }

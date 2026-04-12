@@ -18,11 +18,28 @@ export function NewsList({ initialNews }: NewsListProps) {
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 5);
   const [newNewsCount, setNewNewsCount] = useState(0);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const searchParams = useSearchParams();
   const currentChannel = searchParams.get('channel');
   const currentGroup = searchParams.get('group');
+
+  // Получить токен при монтировании
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.token) {
+          setAuthToken(data.token);
+        }
+      } catch (e) {
+        console.error('Failed to fetch auth token:', e);
+      }
+    };
+    fetchToken();
+  }, []);
 
   useEffect(() => {
     setNews(initialNews);
@@ -41,6 +58,7 @@ export function NewsList({ initialNews }: NewsListProps) {
   useNewsSubscription({
     pbUrl:
       process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090',
+    token: authToken || undefined,
     onNewNews: handleNewNews,
     enabled: true,
   });

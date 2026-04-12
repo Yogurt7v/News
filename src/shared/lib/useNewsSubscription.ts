@@ -5,12 +5,14 @@ import PocketBase from 'pocketbase';
 
 interface UseNewsSubscriptionOptions {
   pbUrl: string;
+  token?: string;
   onNewNews: (news: Record<string, unknown>) => void;
   enabled?: boolean;
 }
 
 export function useNewsSubscription({
   pbUrl,
+  token,
   onNewNews,
   enabled = true,
 }: UseNewsSubscriptionOptions) {
@@ -18,6 +20,16 @@ export function useNewsSubscription({
     if (!enabled || !pbUrl) return;
 
     const pb = new PocketBase(pbUrl);
+
+    // Авторизовать если есть токен
+    if (token) {
+      try {
+        const authData = JSON.parse(atob(token.split('.')[1]));
+        pb.authStore.save(token, authData);
+      } catch (e) {
+        console.error('Failed to parse token:', e);
+      }
+    }
 
     const subscribe = async () => {
       await pb.collection('news').subscribe(
@@ -36,5 +48,5 @@ export function useNewsSubscription({
     return () => {
       pb.collection('news').unsubscribe('*');
     };
-  }, [pbUrl, onNewNews, enabled]);
+  }, [pbUrl, token, onNewNews, enabled]);
 }
