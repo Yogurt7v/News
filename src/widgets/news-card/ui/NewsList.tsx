@@ -31,11 +31,33 @@ export function NewsList({ initialNews }: NewsListProps) {
       try {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
+        console.log('[NewsList] /api/auth/me response:', data);
         if (data.token) {
           setAuthToken(data.token);
+          console.log('[NewsList] Token set, length:', data.token.length);
+        } else {
+          console.log('[NewsList] No token in response, trying cookie...');
+          // Fallback: попробовать получить из document.cookie
+          const match = document.cookie.match(/pb_auth=([^;]+)/);
+          if (match) {
+            console.log('[NewsList] Found cookie pb_auth');
+            try {
+              const decoded = decodeURIComponent(match[1]);
+              const cookieData = JSON.parse(decoded);
+              if (cookieData.token) {
+                setAuthToken(cookieData.token);
+                console.log(
+                  '[NewsList] Token from cookie:',
+                  cookieData.token.substring(0, 50) + '...'
+                );
+              }
+            } catch (e) {
+              console.error('[NewsList] Failed to parse cookie:', e);
+            }
+          }
         }
       } catch (e) {
-        console.error('Failed to fetch auth token:', e);
+        console.error('[NewsList] Failed to fetch auth token:', e);
       }
     };
     fetchToken();
@@ -48,8 +70,15 @@ export function NewsList({ initialNews }: NewsListProps) {
 
   const handleNewNews = useCallback(
     (newNews: Record<string, unknown>) => {
-      if (!currentChannel || newNews.source === `@${currentChannel}`) {
+      console.log('[NewsList] handleNewNews called:', newNews);
+      console.log('[NewsList] currentChannel:', currentChannel);
+      console.log('[NewsList] newNews.source:', newNews.source);
+      const shouldShow =
+        !currentChannel || newNews.source === `@${currentChannel}`;
+      console.log('[NewsList] shouldShow:', shouldShow);
+      if (shouldShow) {
         setNewNewsCount((prev) => prev + 1);
+        console.log('[NewsList] newNewsCount increased');
       }
     },
     [currentChannel]
