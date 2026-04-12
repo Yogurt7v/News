@@ -23,12 +23,7 @@ export function useNewsSubscription({
 
     // Авторизовать если есть токен
     if (token) {
-      try {
-        const authData = JSON.parse(atob(token.split('.')[1]));
-        pb.authStore.save(token, authData);
-      } catch (e) {
-        console.error('Failed to parse token:', e);
-      }
+      pb.authStore.save(token, null);
     }
 
     const subscribe = async () => {

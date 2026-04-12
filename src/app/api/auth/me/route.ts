@@ -14,7 +14,8 @@ export async function GET() {
   }
 
   try {
-    const data = JSON.parse(pbAuth.value);
+    const decodedValue = decodeURIComponent(pbAuth.value);
+    const data = JSON.parse(decodedValue);
     return NextResponse.json({
       authenticated: !!data.model,
       user: data.model || null,
