@@ -13,6 +13,7 @@ export interface NewsCardProps {
       type: string;
       file: string;
       thumbnail?: string;
+      thumbnailUrl?: string;
       order?: number;
       id: string;
     }>;

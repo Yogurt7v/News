@@ -14,22 +14,23 @@ interface NewsWithMedia {
     type: string;
     file: string;
     order: number;
+    thumbnailUrl?: string;
   }>;
+}
+
+interface MediaItem {
+  id: string;
+  type: string;
+  file: string;
+  order: number;
+  thumbnailUrl?: string;
 }
 
 async function fetchMediaFromPocketBase(
   pb: import('pocketbase').default,
   newsIds: string[]
-): Promise<
-  Map<
-    string,
-    Array<{ id: string; type: string; file: string; order: number }>
-  >
-> {
-  const mediaMap = new Map<
-    string,
-    Array<{ id: string; type: string; file: string; order: number }>
-  >();
+): Promise<Map<string, MediaItem[]>> {
+  const mediaMap = new Map<string, MediaItem[]>();
 
   if (newsIds.length === 0) return mediaMap;
 
@@ -37,16 +38,34 @@ async function fetchMediaFromPocketBase(
     filter: newsIds.map((id) => `newsId = "${id}"`).join(' || '),
   });
 
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
+
+  const thumbnailMap = new Map<string, string>();
   for (const m of allMedia) {
+    if (m.type === 'thumbnail') {
+      const newsId = m.newsId as string;
+      const fileUrl = `${pocketbaseUrl}/api/files/media/${m.id}/${m.file}`;
+      thumbnailMap.set(newsId, fileUrl);
+    }
+  }
+
+  for (const m of allMedia) {
+    if (m.type === 'thumbnail') continue;
+
     const newsId = m.newsId as string;
+    const fileUrl = `${pocketbaseUrl}/api/files/media/${m.id}/${m.file}`;
+    const thumbnailUrl = thumbnailMap.get(newsId) || undefined;
+
     if (!mediaMap.has(newsId)) {
       mediaMap.set(newsId, []);
     }
     mediaMap.get(newsId)!.push({
       id: m.id,
       type: m.type as string,
-      file: m.file as string,
+      file: fileUrl,
       order: (m.order as number) || 0,
+      thumbnailUrl,
     });
   }
 
@@ -109,7 +128,7 @@ export async function GET(request: NextRequest) {
     url: string;
     publishedAt: string;
     createdAt: string;
-  }>(offset + 1, limit, {
+  }>(Math.floor(offset / limit) + 1, limit, {
     sort: '-created',
     filter: filter || undefined,
   });

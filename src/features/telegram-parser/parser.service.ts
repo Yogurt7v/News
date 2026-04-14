@@ -15,6 +15,7 @@ export interface TelegramPostMedia {
   width: number;
   height: number;
   fileBuffer?: Buffer;
+  thumbnailBuffer?: Buffer;
 }
 
 export interface TelegramPost {
@@ -228,53 +229,249 @@ export class TelegramParserService {
     }
   }
 
+  private getMimeType(m: any, type: string): string {
+    if (type !== 'video')
+      return type === 'photo' ? 'image/jpeg' : 'application/octet-stream';
+
+    const mime = m.mimeType || '';
+    if (mime) return mime;
+
+    const attrs = m.attributes || [];
+    for (const attr of attrs) {
+      if (attr.fileName) {
+        const ext = attr.fileName.split('.').pop()?.toLowerCase();
+        if (ext === 'webm') return 'video/webm';
+        if (ext === 'mkv') return 'video/x-matroska';
+        if (ext === 'mp4' || ext === 'm4v') return 'video/mp4';
+        if (ext === 'avi') return 'video/x-msvideo';
+        if (ext === '3gp') return 'video/3gpp';
+      }
+    }
+
+    return 'video/mp4';
+  }
+
+  private getFileExtension(mimeType: string): string {
+    const map: Record<string, string> = {
+      'video/webm': 'webm',
+      'video/x-matroska': 'mkv',
+      'video/mp4': 'mp4',
+      'video/x-msvideo': 'avi',
+      'video/3gpp': '3gp',
+    };
+    return map[mimeType] || 'mp4';
+  }
+
+  private async downloadWithTimeout(
+    client: TelegramClient,
+    filePath: string,
+    media: any,
+    timeoutMs: number = 60000
+  ): Promise<void> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      await client.downloadToFile(filePath, media);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async downloadThumbnail(
+    client: TelegramClient,
+    thumbnail: any,
+    timeoutMs: number = 30000
+  ): Promise<Buffer | null> {
+    try {
+      const tmpPath = path.join(os.tmpdir(), `thumb_${Date.now()}.jpg`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      await client.downloadToFile(tmpPath, thumbnail);
+      clearTimeout(timeout);
+
+      const buffer = await fs.readFile(tmpPath);
+      await fs.unlink(tmpPath).catch(() => {});
+
+      return buffer;
+    } catch {
+      return null;
+    }
+  }
+
+  private canGetFileId(thumbnail: any): boolean {
+    try {
+      if (thumbnail.fileId && thumbnail.type !== 'i') {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  private async downloadWithRetry(
+    client: TelegramClient,
+    filePath: string,
+    media: any,
+    maxRetries: number = 7,
+    timeoutMs: number = 60000
+  ): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+        await client.downloadToFile(filePath, media);
+        clearTimeout(timeout);
+
+        const stats = await fs.stat(filePath);
+        if (stats.size > 0) {
+          return true;
+        }
+
+        await fs.unlink(filePath).catch(() => {});
+        this.log(
+          `   ⚠️ Попытка ${attempt}/${maxRetries}: файл пустой, повторяю...`
+        );
+      } catch (e) {
+        await fs.unlink(filePath).catch(() => {});
+        const errMsg = e instanceof Error ? e.message : 'unknown';
+        if (errMsg.includes('aborted')) {
+          this.log(
+            `   ⚠️ Попытка ${attempt}/${maxRetries}: таймаут, повторяю...`
+          );
+        } else {
+          this.log(
+            `   ⚠️ Попытка ${attempt}/${maxRetries}: ошибка, повторяю...`
+          );
+        }
+      }
+
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    return false;
+  }
+
   /* eslint-disable @typescript-eslint/no-explicit-any */
+  private getBestPhotoSize(m: any): any {
+    if (!m.sizes || !Array.isArray(m.sizes) || m.sizes.length === 0) {
+      return m;
+    }
+
+    const sortedSizes = [...m.sizes].sort(
+      (a: any, b: any) => b.width - a.width
+    );
+
+    for (const size of sortedSizes) {
+      if (size && size.width && size.width > 100) {
+        return size;
+      }
+    }
+
+    return m.sizes[0];
+  }
+
   private async extractMedia(
     m: any,
     client: TelegramClient
   ): Promise<TelegramPostMedia | null> {
     /* eslint-enable @typescript-eslint/no-explicit-any */
     let type: TelegramPostMedia['type'] | null = null;
-    const mime = m.mimeType || '';
 
     if (m.type === 'photo') type = 'photo';
     else if (
       m.type === 'video' ||
       m.type === 'animation' ||
-      mime.includes('video')
+      (m.mimeType || '').includes('video')
     )
       type = 'video';
     else if (m.type === 'document') type = 'document';
 
     if (!type) return null;
 
+    const mediaToDownload =
+      type === 'photo' && m.sizes ? this.getBestPhotoSize(m) : m;
+
+    const mimeType = this.getMimeType(mediaToDownload, type);
+    const ext = this.getFileExtension(mimeType);
+    const fileName = `${m.fileId}.${ext}`;
+    const tmpPath = path.join(os.tmpdir(), fileName);
+    let thumbnailBuffer: Buffer | undefined;
+
+    this.log(`   ⏳ Скачиваю ${type} (${mimeType})...`);
+
     try {
-      const ext =
-        type === 'video' ? 'mp4' : type === 'photo' ? 'jpg' : 'bin';
-      const fileName = `${m.fileId}.${ext}`;
-      const tmpPath = path.join(os.tmpdir(), fileName);
+      const downloaded = await this.downloadWithRetry(
+        client,
+        tmpPath,
+        mediaToDownload
+      );
 
-      this.log(`   ⏳ Скачиваю ${type} ... `);
+      if (!downloaded) {
+        throw new Error(
+          'Не удалось скачать файл после нескольких попыток'
+        );
+      }
 
-      await client.downloadToFile(tmpPath, m);
-
+      const stats = await fs.stat(tmpPath);
       const fileBuffer = await fs.readFile(tmpPath);
-
       await fs.unlink(tmpPath).catch(() => {});
-      this.log(`✅ Готово\n`);
+      this.log(
+        `✅ Готово (${(stats.size / 1024 / 1024).toFixed(2)} MB)\n`
+      );
+
+      if (type === 'video' && m.thumbnails && m.thumbnails.length > 0) {
+        const validThumbs = m.thumbnails.filter((t: any) =>
+          this.canGetFileId(t)
+        );
+        const videoThumb =
+          validThumbs.find(
+            (t: any) => t.type === 'v' || t.type === 'u' || t.isVideo
+          ) ||
+          validThumbs[0] ||
+          m.thumbnails[0];
+
+        if (videoThumb && this.canGetFileId(videoThumb)) {
+          try {
+            this.log(`   🖼️  Скачиваю thumbnail...`);
+            const thumb = await this.downloadThumbnail(client, videoThumb);
+            if (thumb) {
+              thumbnailBuffer = thumb;
+              this.log(
+                `✅ Thumbnail готов (${(thumb.length / 1024).toFixed(1)} KB)`
+              );
+            }
+          } catch {
+            this.log(
+              `   ⚠️ Не удалось скачать thumbnail, продолжаем без него`
+            );
+          }
+        }
+      }
 
       return {
         type,
         fileId: m.fileId,
         tempPath: tmpPath,
-        mimeType: type === 'video' ? 'video/mp4' : 'image/jpeg',
-        fileName: fileName,
+        mimeType,
+        fileName,
         width: m.width || 0,
         height: m.height || 0,
         fileBuffer,
+        thumbnailBuffer,
       } as TelegramPostMedia & { fileBuffer: Buffer };
     } catch (e) {
-      console.error(`\n❌ Ошибка скачивания ${m.fileId}:`, e);
+      const errMsg = e instanceof Error ? e.message : 'unknown';
+      if (errMsg.includes('aborted') || errMsg.includes('Abort')) {
+        console.error(`\n⏱️ Таймаут скачивания ${m.fileId}`);
+      } else {
+        console.error(`\n❌ Ошибка скачивания ${m.fileId}:`, e);
+      }
+      await fs.unlink(tmpPath).catch(() => {});
       return null;
     }
   }
@@ -329,13 +526,43 @@ export class TelegramParserService {
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
-          await pb
+          const mediaRecord = await pb
             .collection('media')
             .create(formData, { requestKey: null });
+
           await fs.unlink(m.tempPath).catch(() => {});
           this.log(
             `      [${i + 1}/${post.media.length}] Файл загружен и удален из tmp\n`
           );
+
+          if (m.thumbnailBuffer) {
+            const thumbSize = m.thumbnailBuffer.length;
+            this.log(
+              `   🖼️  Сохраняю thumbnail (${(thumbSize / 1024).toFixed(1)} KB)...`
+            );
+
+            const thumbFormData = new FormData();
+            thumbFormData.append('newsId', newsRecord.id);
+            thumbFormData.append('type', 'thumbnail');
+            thumbFormData.append('order', '-1');
+            thumbFormData.append('size', thumbSize.toString());
+            thumbFormData.append('isCompressed', 'true');
+
+            const thumbUint8 = new Uint8Array(m.thumbnailBuffer);
+            const thumbBlob = new Blob([thumbUint8], {
+              type: 'image/jpeg',
+            });
+            thumbFormData.append(
+              'file',
+              thumbBlob,
+              `thumb_${m.fileId}.jpg`
+            );
+
+            await pb
+              .collection('media')
+              .create(thumbFormData, { requestKey: null });
+            this.log(`✅ Thumbnail сохранён\n`);
+          }
         }
       }
       return true;

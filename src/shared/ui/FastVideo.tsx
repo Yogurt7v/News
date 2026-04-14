@@ -21,14 +21,25 @@ export function FastVideo({
   onError,
 }: FastVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const thumbnailVideoRef = useRef<HTMLVideoElement>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string>(poster || '');
   const [isThumbnailReady, setIsThumbnailReady] = useState(!!poster);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(!lazy);
   const [videoError, setVideoError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [key, setKey] = useState(0);
+
+  useEffect(() => {
+    if (poster) {
+      setThumbnailUrl(poster);
+      setIsThumbnailReady(true);
+    } else {
+      setThumbnailUrl('');
+      setIsThumbnailReady(false);
+    }
+  }, [poster]);
 
   const handleRetry = useCallback(() => {
     if (retryCount < MAX_RETRIES) {
@@ -42,6 +53,7 @@ export function FastVideo({
   const handleFallback = useCallback(() => {
     setVideoError(true);
     setIsLoading(false);
+    setIsBuffering(false);
     onError?.();
   }, [onError]);
 
@@ -65,84 +77,8 @@ export function FastVideo({
     return () => observer.disconnect();
   }, [lazy]);
 
-  useEffect(() => {
-    if (!thumbnailVideoRef.current || poster) return;
-
-    const video = thumbnailVideoRef.current;
-    let cancelled = false;
-
-    const generateThumbnail = async () => {
-      if (video.readyState < 1) {
-        await new Promise<void>((resolve) => {
-          video.addEventListener('loadedmetadata', () => resolve(), {
-            once: true,
-          });
-        });
-      }
-
-      if (cancelled || video.readyState < 1) return;
-
-      video.currentTime = 0.1;
-
-      await new Promise<void>((resolve) => {
-        const onSeeked = () => {
-          video.removeEventListener('seeked', onSeeked);
-          resolve();
-        };
-        video.addEventListener('seeked', onSeeked);
-      });
-
-      if (cancelled) return;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 360;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob && !cancelled) {
-            const url = URL.createObjectURL(blob);
-            setThumbnailUrl(url);
-            setIsThumbnailReady(true);
-            setIsLoading(false);
-          }
-        },
-        'image/jpeg',
-        0.8
-      );
-    };
-
-    if (video.readyState >= 1) {
-      generateThumbnail();
-    } else {
-      video.addEventListener('loadedmetadata', generateThumbnail, {
-        once: true,
-      });
-    }
-
-    return () => {
-      cancelled = true;
-      if (thumbnailUrl && thumbnailUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(thumbnailUrl);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, poster]);
-
   return (
     <div className={`relative ${className}`}>
-      <video
-        key={`thumb-${key}`}
-        ref={thumbnailVideoRef}
-        src={src}
-        preload="metadata"
-        className="hidden"
-        aria-hidden="true"
-      />
       {isLoading && !isThumbnailReady && !videoError && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
           <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
@@ -173,28 +109,47 @@ export function FastVideo({
           )}
         </div>
       )}
+      {!videoError && thumbnailUrl && !isBuffering && (
+        <Image
+          src={thumbnailUrl}
+          alt="Video thumbnail"
+          fill
+          className="object-cover"
+          unoptimized
+        />
+      )}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       <video
         key={`video-${key}`}
         ref={videoRef}
         src={shouldLoad ? src : undefined}
-        poster={!videoError ? thumbnailUrl || undefined : undefined}
+        poster={!videoError && thumbnailUrl ? undefined : undefined}
         autoPlay={autoPlay}
         muted={muted}
         playsInline={playsInline}
-        controls={controls}
+        controls={false}
         preload={lazy ? 'none' : 'metadata'}
-        className="w-full h-full object-contain"
+        className="w-full h-full object-contain z-20"
         onLoadStart={() => setIsLoading(true)}
         onCanPlay={() => {
           setIsLoading(false);
+          setIsBuffering(false);
           setRetryCount(0);
           onLoad?.();
         }}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
         onLoadedMetadata={() => {
           if (!poster && !thumbnailUrl) {
             setIsThumbnailReady(true);
           }
         }}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
         onError={() => {
           if (retryCount < MAX_RETRIES) {
             setTimeout(() => {
@@ -207,6 +162,19 @@ export function FastVideo({
       >
         <source src={src} type="video/mp4" />
       </video>
+      {!isPlaying && !videoError && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <div className="w-16 h-16 rounded-full bg-white/90 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-[#0071e3] ml-1"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

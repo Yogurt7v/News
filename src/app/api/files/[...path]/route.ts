@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Readable } from 'node:stream';
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +13,11 @@ export async function GET(
   const url = `${pocketbaseUrl}/api/files/${filePath}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: request.headers.get('range')
+        ? { Range: request.headers.get('range')! }
+        : undefined,
+    });
 
     if (!response.ok) {
       return NextResponse.json(
@@ -26,9 +31,25 @@ export async function GET(
     if (contentType) {
       headers.set('Content-Type', contentType);
     }
-    headers.set('Cache-Control', 'public, max-age=86400');
 
-    return new NextResponse(response.body, {
+    const contentLength = response.headers.get('Content-Length');
+    if (contentLength) {
+      headers.set('Content-Length', contentLength);
+    }
+
+    const contentRange = response.headers.get('Content-Range');
+    if (contentRange) {
+      headers.set('Content-Range', contentRange);
+      return new NextResponse(response.body, {
+        status: 206,
+        headers,
+      });
+    }
+
+    headers.set('Cache-Control', 'public, max-age=86400');
+    headers.set('Accept-Ranges', 'bytes');
+
+    return new NextResponse(response.body as unknown as BodyInit, {
       status: 200,
       headers,
     });

@@ -10,19 +10,34 @@ export function getFileUrl(
   recordId: string,
   filename: string
 ): string {
-  return `/api/files/${collection}/${recordId}/${filename}`;
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
+  return `${pocketbaseUrl}/api/files/${collection}/${recordId}/${filename}`;
 }
 
 export function getMediaFileUrl(
   media: MediaItem,
   newsId?: string
 ): string {
+  if (!media.file) return '/placeholder-image';
+
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
+
+  if (media.file.startsWith('http')) {
+    return media.file;
+  }
+
+  if (media.file.startsWith('/api/files/')) {
+    return `${pocketbaseUrl}${media.file}`;
+  }
+
   const recordId = media.id || newsId;
   if (!recordId) {
     console.warn('getMediaFileUrl: no record ID provided');
     return '/placeholder-image';
   }
-  return `/api/files/media/${recordId}/${media.file}`;
+  return `${pocketbaseUrl}/api/files/media/${recordId}/${media.file}`;
 }
 
 export function getAvatarUrl(
@@ -30,5 +45,7 @@ export function getAvatarUrl(
   avatarFilename: string
 ): string {
   if (!avatarFilename) return '';
-  return `/api/files/subscriptions/${subscriptionId}/${avatarFilename}`;
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
+  return `${pocketbaseUrl}/api/files/subscriptions/${subscriptionId}/${avatarFilename}`;
 }

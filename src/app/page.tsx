@@ -74,6 +74,69 @@ export default async function HomePage({ searchParams }: PageProps) {
     expand: 'media(newsId)',
   });
 
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
+  const newsIds = result.items.map((item) => item.id);
+
+  let thumbnailMap = new Map<string, string>();
+  if (newsIds.length > 0) {
+    const allThumbs = await pb.collection('media').getFullList({
+      filter: `newsId ~ "${newsIds.join('" || newsId ~ "')}" && type = "thumbnail"`,
+      fields: 'newsId,id,file',
+    });
+    for (const thumb of allThumbs) {
+      thumbnailMap.set(
+        thumb.newsId as string,
+        `${pocketbaseUrl}/api/files/media/${thumb.id}/${thumb.file}`
+      );
+    }
+  }
+
+  const newsItems = result.items.map(
+    (
+      item
+    ): {
+      id: string;
+      title: string;
+      content: string;
+      source: string;
+      url: string;
+      publishedAt?: string;
+      media?: Array<{
+        type: string;
+        file: string;
+        order?: number;
+        id: string;
+        thumbnailUrl?: string;
+      }>;
+    } => {
+      const media = item.expand?.['media(newsId)'] as
+        | Array<{
+            id: string;
+            type: string;
+            file: string;
+            order: number;
+          }>
+        | undefined;
+
+      const thumbUrl = thumbnailMap.get(item.id);
+      const mediaWithThumb = media?.map((m, idx) => ({
+        ...m,
+        thumbnailUrl: idx === 0 && thumbUrl ? thumbUrl : undefined,
+      }));
+
+      return {
+        id: item.id,
+        title: item.title as string,
+        content: item.content as string,
+        source: item.source as string,
+        url: item.url as string,
+        publishedAt: item.publishedAt as string | undefined,
+        media: mediaWithThumb,
+      };
+    }
+  );
+
   const pageTitle = group
     ? 'Новости группы'
     : channel
@@ -84,23 +147,6 @@ export default async function HomePage({ searchParams }: PageProps) {
     subscriptionCount > 0
       ? `${subscriptionCount} канал${subscriptionCount === 1 ? '' : subscriptionCount < 5 ? 'а' : 'ов'} • ${result.totalItems} новостей`
       : undefined;
-
-  const newsItems = result.items as unknown as Array<{
-    id: string;
-    title: string;
-    content: string;
-    source: string;
-    url: string;
-    imageUrl?: string;
-    publishedAt?: string;
-    expand?: Record<string, unknown>;
-    media?: Array<{
-      type: string;
-      file: string;
-      order?: number;
-      id: string;
-    }>;
-  }>;
 
   return (
     <Wallpaper>

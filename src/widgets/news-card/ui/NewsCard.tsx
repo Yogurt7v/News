@@ -32,13 +32,17 @@ export function NewsCard({ news }: NewsCardProps) {
     [];
 
   if (news.media && Array.isArray(news.media)) {
-    mediaItems = news.media.map((m) => ({
-      type: m.type,
-      url: getMediaFileUrl(m),
-      thumbnailUrl: m.thumbnail
-        ? getMediaFileUrl({ ...m, file: m.thumbnail })
-        : undefined,
-    }));
+    mediaItems = news.media.map((m) => {
+      let url = m.file;
+      if (!url?.startsWith('http') && !url?.startsWith('/api/files/')) {
+        url = getMediaFileUrl(m);
+      }
+      return {
+        type: m.type,
+        url,
+        thumbnailUrl: m.thumbnailUrl,
+      };
+    });
   } else if (Array.isArray(expandedMedia)) {
     mediaItems = expandedMedia.map((m) => ({
       type: m.type,
@@ -73,7 +77,7 @@ export function NewsCard({ news }: NewsCardProps) {
                 </svg>
               </div>
               <span className="text-sm font-semibold text-[#0071e3]">
-                {news.channelTitle!.length > 0
+                {(news.channelTitle?.length ?? 0) > 0
                   ? news.channelTitle
                   : news.source}
               </span>

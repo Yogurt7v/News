@@ -13,6 +13,7 @@ export interface NewsListProps {
       file: string;
       order?: number;
       id: string;
+      thumbnailUrl?: string;
     }>;
     [key: string]: unknown;
   }>;
