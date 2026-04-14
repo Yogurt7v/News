@@ -22,6 +22,7 @@ function SignInContent({
   const [showCredentials, setShowCredentials] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<
     null | 'google' | 'yandex' | 'github'
   >(null);
@@ -69,6 +70,7 @@ function SignInContent({
         setError('Неверный email или пароль');
         return;
       }
+      setIsNavigating(true);
       router.push(callbackUrl);
       router.refresh();
     } catch {
@@ -152,6 +154,7 @@ function SignInContent({
               <CredentialsForm
                 onSubmit={handleCredentialsSubmit}
                 loading={loading}
+                isNavigating={isNavigating}
                 error={error}
                 onBack={() => setShowCredentials(false)}
               />

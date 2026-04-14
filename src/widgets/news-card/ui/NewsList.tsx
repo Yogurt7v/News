@@ -13,11 +13,14 @@ import { useNewsSubscription } from '@/shared/lib/useNewsSubscription';
 
 import type { NewsListProps } from './NewsList.types';
 
+type NewsItem = NewsListProps['initialNews'][number];
+
 export function NewsList({ initialNews }: NewsListProps) {
   const [news, setNews] = useState(initialNews);
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 5);
   const [newNewsCount, setNewNewsCount] = useState(0);
+  const [pendingNewNews, setPendingNewNews] = useState<NewsItem[]>([]);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +66,7 @@ export function NewsList({ initialNews }: NewsListProps) {
       const shouldShow =
         !currentChannel || newNews.source === `@${currentChannel}`;
       if (shouldShow) {
+        setPendingNewNews((prev) => [...prev, newNews as NewsItem]);
         setNewNewsCount((prev) => prev + 1);
       }
     },
@@ -78,9 +82,8 @@ export function NewsList({ initialNews }: NewsListProps) {
   });
 
   const showNewNews = () => {
-    setNews((prev) =>
-      [initialNews[0] || news[0], ...prev].filter(Boolean)
-    );
+    setNews((prev) => [...pendingNewNews, ...prev] as NewsItem[]);
+    setPendingNewNews([]);
     setNewNewsCount(0);
   };
 

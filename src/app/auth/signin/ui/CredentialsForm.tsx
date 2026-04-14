@@ -4,9 +4,12 @@ import Link from 'next/link';
 export function CredentialsForm({
   onSubmit,
   loading,
+  isNavigating,
   error,
   onBack,
 }: CredentialsFormProps) {
+  const isLoading = loading || isNavigating;
+
   return (
     <form
       onSubmit={onSubmit}
@@ -45,10 +48,10 @@ export function CredentialsForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={isLoading}
         className="w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#005bb5] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {loading ? (
+        {isLoading ? (
           <svg
             className="w-5 h-5 animate-spin"
             viewBox="0 0 24 24"

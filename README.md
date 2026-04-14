@@ -166,7 +166,7 @@ news/
 │   │   └── test-pocketbase.ts
 │   │
 │   ├── proxy.ts             # Middleware для авторизации
-│   └── middleware.ts        # TODO: замена proxy.ts
+│
 │
 ├── docker-compose.yml       # PostgreSQL (не используется)
 ├── package.json
@@ -231,45 +231,6 @@ class TelegramParserService {
   }
 }
 ```
-
-### Nginx (Конфигурация)
-
-Nginx используется как обратный прокси перед Next.js:
-
-```nginx
-upstream next_backend {
-    server localhost:3000;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name be-informed.ru;
-
-    ssl_certificate /etc/letsencrypt/live/be-informed.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/be-informed.ru/privkey.pem;
-
-    # Статика - отдаем сразу
-    location /_next/static {
-        proxy_pass http://next_backend;
-        proxy_cache_valid 60m;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-    }
-
-    # API и остальное - на Next.js
-    location / {
-        proxy_pass http://next_backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
----
 
 ## База данных (PocketBase)
 
@@ -508,7 +469,7 @@ sudo systemctl reload nginx
 
 - [ ] Тёмная тема
 - [ ] PWA поддержка
-- [ ] Тесты覆盖率 до 80%
+- [ ] Тесты до 80%
 
 ---
 
