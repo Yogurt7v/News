@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import '@testing-library/jest-dom';
 
 const {
@@ -5,13 +6,15 @@ const {
   TextDecoder: NodeTextDecoder,
 } = require('util');
 
-globalThis.TextEncoder = NodeTextEncoder;
-globalThis.TextDecoder = NodeTextDecoder;
+(globalThis as unknown as Record<string, unknown>).TextEncoder =
+  NodeTextEncoder;
+(globalThis as unknown as Record<string, unknown>).TextDecoder =
+  NodeTextDecoder;
 
 const { Response, Request, Headers, fetch: originalFetch } = globalThis;
 
-globalThis.Response = Response;
-globalThis.Request = Request;
-globalThis.Headers = Headers;
+(globalThis as unknown as Record<string, unknown>).Response = Response;
+(globalThis as unknown as Record<string, unknown>).Request = Request;
+(globalThis as unknown as Record<string, unknown>).Headers = Headers;
 
 globalThis.fetch = originalFetch;

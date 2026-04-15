@@ -48,7 +48,7 @@ export async function DELETE(
     await pb.collection('groups').delete(groupId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete group error:', error);
     return NextResponse.json(
       { error: 'Ошибка при удалении группы' },
@@ -103,7 +103,7 @@ export async function PATCH(
     await pb.collection('groups').update(groupId, { name });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Rename group error:', error);
     return NextResponse.json(
       { error: 'Ошибка при переименовании группы' },

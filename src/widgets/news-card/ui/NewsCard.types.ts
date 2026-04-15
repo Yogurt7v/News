@@ -8,6 +8,7 @@ export interface NewsCardProps {
     url: string;
     imageUrl?: string;
     publishedAt?: string;
+    avatar?: string;
     expand?: Record<string, unknown>;
     media?: Array<{
       type: string;

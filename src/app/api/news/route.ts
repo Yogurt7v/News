@@ -88,6 +88,37 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10');
   const channel = searchParams.get('channel');
   const groupId = searchParams.get('group');
+  const ids = searchParams.get('ids');
+
+  // Endpoint для fetch конкретных новостей по IDs (для realtime updates)
+  if (ids) {
+    const newsIds = ids.split(',').filter(Boolean);
+    if (newsIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const newsList = await pb.collection('news').getList<{
+      id: string;
+      title: string;
+      content: string;
+      source: string;
+      url: string;
+      publishedAt: string;
+      createdAt: string;
+    }>(1, newsIds.length, {
+      filter: newsIds.map((id) => `id = "${id}"`).join(' || '),
+      sort: '-created',
+    });
+
+    const mediaMap = await fetchMediaFromPocketBase(pb, newsIds);
+
+    const result: NewsWithMedia[] = newsList.items.map((item) => ({
+      ...item,
+      media: mediaMap.get(item.id) || [],
+    }));
+
+    return NextResponse.json(result);
+  }
 
   let filter = '';
 

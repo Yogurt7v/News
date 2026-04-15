@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const pb = await getServerPocketBase();
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(groupsWithChannels);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get groups error:', error);
     return NextResponse.json(
       { error: 'Ошибка при получении групп' },
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(group);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create group error:', error);
     return NextResponse.json(
       { error: 'Ошибка при создании группы' },

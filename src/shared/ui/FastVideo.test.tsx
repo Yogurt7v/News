@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { FastVideo } from './FastVideo';
 
 (
@@ -15,7 +15,9 @@ import { FastVideo } from './FastVideo';
 
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: { src: string; alt: string }) => <img {...props} />,
+  default: (props: { src: string; alt: string }) => (
+    <img alt={props.alt} />
+  ),
 }));
 
 describe('FastVideo', () => {

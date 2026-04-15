@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     await pb.collection('users').requestPasswordReset(email);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Password reset error:', error);
     return NextResponse.json(
       { success: false, error: getErrorMessage(error) },

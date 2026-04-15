@@ -1,4 +1,4 @@
-import { getChannelsList, telegramConfig } from './telegram';
+import { getChannelsList } from './telegram';
 
 describe('telegram.ts', () => {
   const originalEnv = process.env;
@@ -51,14 +51,14 @@ describe('telegram.ts', () => {
   });
 
   describe('telegramConfig', () => {
-    test('использует значения из переменных окружения', () => {
+    test('использует значения из переменных окружения', async () => {
       process.env.TELEGRAM_API_ID = '12345';
       process.env.TELEGRAM_API_HASH = 'abc123hash';
       process.env.TELEGRAM_PHONE_NUMBER = '+79001234567';
       process.env.TELEGRAM_SESSION_STRING = 'session123';
 
       jest.resetModules();
-      const { telegramConfig: config } = require('./telegram');
+      const { telegramConfig: config } = await import('./telegram');
 
       expect(config.apiId).toBe(12345);
       expect(config.apiHash).toBe('abc123hash');
@@ -66,14 +66,14 @@ describe('telegram.ts', () => {
       expect(config.sessionString).toBe('session123');
     });
 
-    test('использует значения по умолчанию когда переменные не установлены', () => {
+    test('использует значения по умолчанию когда переменные не установлены', async () => {
       delete process.env.TELEGRAM_API_ID;
       delete process.env.TELEGRAM_API_HASH;
       delete process.env.TELEGRAM_PHONE_NUMBER;
       delete process.env.TELEGRAM_SESSION_STRING;
 
       jest.resetModules();
-      const { telegramConfig: config } = require('./telegram');
+      const { telegramConfig: config } = await import('./telegram');
 
       expect(config.apiId).toBe(0);
       expect(config.apiHash).toBe('');

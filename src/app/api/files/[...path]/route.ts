@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Readable } from 'node:stream';
 
 export async function GET(
   request: NextRequest,

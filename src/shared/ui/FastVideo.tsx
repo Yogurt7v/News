@@ -26,15 +26,14 @@ export function FastVideo({
   autoPlay = false,
   muted = true,
   playsInline = true,
-  controls = false,
   lazy = true,
   showDuration = true,
   onLoad,
   onError,
 }: FastVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [thumbnailUrl, setThumbnailUrl] = useState<string>(poster || '');
-  const [isThumbnailReady, setIsThumbnailReady] = useState(!!poster);
+  const [thumbnailUrl] = useState<string>(poster || '');
+  const [isThumbnailReady] = useState(!!poster);
   const [isLoading, setIsLoading] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -43,16 +42,6 @@ export function FastVideo({
   const [retryCount, setRetryCount] = useState(0);
   const [key, setKey] = useState(0);
   const [duration, setDuration] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (poster) {
-      setThumbnailUrl(poster);
-      setIsThumbnailReady(true);
-    } else {
-      setThumbnailUrl('');
-      setIsThumbnailReady(false);
-    }
-  }, [poster]);
 
   const handleRetry = useCallback(() => {
     if (retryCount < MAX_RETRIES) {
@@ -157,9 +146,6 @@ export function FastVideo({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onLoadedMetadata={(e) => {
-          if (!poster && !thumbnailUrl) {
-            setIsThumbnailReady(true);
-          }
           setDuration(e.currentTarget.duration);
         }}
         onWaiting={() => setIsBuffering(true)}

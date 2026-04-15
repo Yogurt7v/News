@@ -58,11 +58,15 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     // Обрабатываем уникальное ограничение (уже подписан)
+    const err = error as {
+      status?: number;
+      data?: { data?: { channelUsername?: { code: string } } };
+    };
     if (
-      error.status === 400 &&
-      error.data?.data?.channelUsername?.code === 'unique'
+      err.status === 400 &&
+      err.data?.data?.channelUsername?.code === 'unique'
     ) {
       return NextResponse.json(
         { error: 'Вы уже подписаны на этот канал' },

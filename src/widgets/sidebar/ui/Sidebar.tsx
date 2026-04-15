@@ -4,21 +4,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateGroupModal } from '@/features/groups/ui/CreateGroupModal';
 import { DeleteGroupModal } from '@/features/groups/ui/DeleteGroupModal';
 import { AddChannelSlide } from '@/features/subscriptions/ui/AddChannelSlide';
-// API helper functions
-const apiSubscribeToChannel = async (
-  channelUsername: string,
-  channelTitle?: string
-) => {
-  const res = await fetch('/api/subscriptions/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ channelUsername, channelTitle }),
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.error || 'Ошибка при подписке');
-  }
-};
 
 const apiUnsubscribeFromChannel = async (channelUsername: string) => {
   const res = await fetch(

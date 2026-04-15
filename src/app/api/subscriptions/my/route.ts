@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerPocketBase } from '@/shared/lib/pocketbase.server';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const pb = await getServerPocketBase();
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json(subscriptions);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get subscriptions error:', error);
     return NextResponse.json(
       { error: 'Ошибка при получении подписок' },

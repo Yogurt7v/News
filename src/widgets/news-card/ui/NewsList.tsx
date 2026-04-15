@@ -15,8 +15,14 @@ import type { NewsListProps } from './NewsList.types';
 
 type NewsItem = NewsListProps['initialNews'][number];
 
+interface PendingNews extends NewsItem {
+  _pending?: boolean;
+}
+
 export function NewsList({ initialNews }: NewsListProps) {
-  const [news, setNews] = useState(initialNews);
+  const [news, setNews] = useState<PendingNews[]>(
+    initialNews as PendingNews[]
+  );
   const [isPending, startTransition] = useTransition();
   const [hasMore, setHasMore] = useState(initialNews.length >= 5);
   const [newNewsCount, setNewNewsCount] = useState(0);
@@ -57,7 +63,7 @@ export function NewsList({ initialNews }: NewsListProps) {
   }, []);
 
   useEffect(() => {
-    setNews(initialNews);
+    setNews(initialNews as PendingNews[]);
     setHasMore(initialNews.length >= 5);
   }, [initialNews]);
 
@@ -81,10 +87,47 @@ export function NewsList({ initialNews }: NewsListProps) {
     enabled: true,
   });
 
-  const showNewNews = () => {
-    setNews((prev) => [...pendingNewNews, ...prev] as NewsItem[]);
+  const showNewNews = async () => {
+    const pending = pendingNewNews as PendingNews[];
+    const newIds = pending.map((n) => n.id);
+
+    // Добавляем сразу с флагом _pending
+    setNews((prev) => [
+      ...pending.map((n) => ({ ...n, _pending: true })),
+      ...prev,
+    ]);
     setPendingNewNews([]);
     setNewNewsCount(0);
+
+    // Fetch полных данных с media
+    try {
+      const res = await fetch(`/api/news?ids=${newIds.join(',')}`);
+      if (res.ok) {
+        const fullNews = await res.json();
+
+        // Плавно обновляемmedia
+        setNews((prev) =>
+          prev.map((item) => {
+            if (newIds.includes(item.id)) {
+              const updated = fullNews.find(
+                (n: NewsItem) => n.id === item.id
+              );
+              if (updated) {
+                return { ...updated, _pending: false };
+              }
+            }
+            return item;
+          })
+        );
+      }
+    } catch {
+      // Fallback - убираем флаг pending
+      setNews((prev) =>
+        prev.map((item) =>
+          newIds.includes(item.id) ? { ...item, _pending: false } : item
+        )
+      );
+    }
   };
 
   const loadMore = async () => {

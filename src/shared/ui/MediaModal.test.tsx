@@ -10,7 +10,7 @@ jest.mock('./FastVideo', () => ({
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
-    const { alt, fill, unoptimized, priority, sizes, ...rest } = props;
+    const { alt, ...rest } = props;
     return <img alt={String(alt)} {...rest} />;
   },
 }));

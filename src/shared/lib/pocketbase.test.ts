@@ -24,18 +24,18 @@ describe('pocketbase.ts', () => {
     process.env = originalEnv;
   });
 
-  test('экспортирует pb объект', () => {
-    const { pb } = require('./pocketbase');
+  test('экспортирует pb объект', async () => {
+    const { pb } = await import('./pocketbase');
     expect(pb).toBeDefined();
   });
 
-  test('pb имеет метод authStore', () => {
-    const { pb } = require('./pocketbase');
+  test('pb имеет метод authStore', async () => {
+    const { pb } = await import('./pocketbase');
     expect(pb.authStore).toBeDefined();
   });
 
-  test('pb имеет метод collection', () => {
-    const { pb } = require('./pocketbase');
+  test('pb имеет метод collection', async () => {
+    const { pb } = await import('./pocketbase');
     expect(pb.collection).toBeDefined();
   });
 });

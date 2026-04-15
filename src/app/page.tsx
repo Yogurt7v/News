@@ -78,7 +78,23 @@ export default async function HomePage({ searchParams }: PageProps) {
     process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://5.53.125.238:8090';
   const newsIds = result.items.map((item) => item.id);
 
-  let thumbnailMap = new Map<string, string>();
+  // Получаем подписки для avatar'ов
+  const userId = pb.authStore.model?.id;
+  const avatarMap = new Map<string, { id: string; avatar: string }>();
+  if (userId) {
+    const subs = await pb.collection('subscriptions').getFullList({
+      filter: `userId = "${userId}"`,
+    });
+    for (const sub of subs) {
+      const username = `@${(sub as unknown as { channelUsername: string }).channelUsername}`;
+      avatarMap.set(username, {
+        id: sub.id,
+        avatar: (sub as unknown as { avatar?: string }).avatar || '',
+      });
+    }
+  }
+
+  const thumbnailMap = new Map<string, string>();
   if (newsIds.length > 0) {
     const allThumbs = await pb.collection('media').getFullList({
       filter: `newsId ~ "${newsIds.join('" || newsId ~ "')}" && type = "thumbnail"`,
@@ -102,6 +118,7 @@ export default async function HomePage({ searchParams }: PageProps) {
       source: string;
       url: string;
       publishedAt?: string;
+      avatar?: string;
       media?: Array<{
         type: string;
         file: string;
@@ -125,13 +142,20 @@ export default async function HomePage({ searchParams }: PageProps) {
         thumbnailUrl: idx === 0 && thumbUrl ? thumbUrl : undefined,
       }));
 
+      const source = item.source as string;
+      const avatarData = avatarMap.get(source);
+      const avatarUrl = avatarData?.avatar
+        ? `${pocketbaseUrl}/api/files/subscriptions/${avatarData.id}/${avatarData.avatar}`
+        : undefined;
+
       return {
         id: item.id,
         title: item.title as string,
         content: item.content as string,
-        source: item.source as string,
+        source,
         url: item.url as string,
         publishedAt: item.publishedAt as string | undefined,
+        avatar: avatarUrl,
         media: mediaWithThumb,
       };
     }
@@ -150,9 +174,9 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <Wallpaper>
-      <div className="flex min-h-dvh">
+      <div className="flex h-dvh">
         <Sidebar />
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6">
             <PageContent
               title={pageTitle}

@@ -35,7 +35,7 @@ export async function POST(
       );
     }
 
-    const { channelUsername, channelTitle } = await request.json();
+    const { channelUsername } = await request.json();
 
     if (!channelUsername) {
       return NextResponse.json(
@@ -51,18 +51,22 @@ export async function POST(
         groupId,
         channelUsername: cleanUsername,
       });
-    } catch (error: any) {
+    } catch (error) {
       // Игнорируем дубликаты (уникальное ограничение)
+      const err = error as {
+        status?: number;
+        data?: { data?: { channelUsername?: { code: string } } };
+      };
       if (
-        error.status !== 400 ||
-        error.data?.data?.channelUsername?.code !== 'unique'
+        err.status !== 400 ||
+        err.data?.data?.channelUsername?.code !== 'unique'
       ) {
         throw error;
       }
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Add channel to group error:', error);
     return NextResponse.json(
       { error: 'Ошибка при добавлении канала в группу' },
@@ -127,7 +131,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Remove channel from group error:', error);
     return NextResponse.json(
       { error: 'Ошибка при удалении канала из группы' },

@@ -18,6 +18,25 @@ export interface TelegramPostMedia {
   thumbnailBuffer?: Buffer;
 }
 
+interface TelegramMediaAttributes {
+  fileName?: string;
+}
+
+interface TelegramMedia {
+  mimeType?: string;
+  attributes?: TelegramMediaAttributes[];
+  fileId?: string;
+  type?: string;
+  width?: number;
+  height?: number;
+  thumbnails?: TelegramMedia[];
+  isVideo?: boolean;
+}
+
+interface TelegramThumbnail extends TelegramMedia {
+  isVideo?: boolean;
+}
+
 export interface TelegramPost {
   id: number;
   date: Date;
@@ -229,7 +248,7 @@ export class TelegramParserService {
     }
   }
 
-  private getMimeType(m: any, type: string): string {
+  private getMimeType(m: TelegramMedia, type: string): string {
     if (type !== 'video')
       return type === 'photo' ? 'image/jpeg' : 'application/octet-stream';
 
@@ -265,6 +284,7 @@ export class TelegramParserService {
   private async downloadWithTimeout(
     client: TelegramClient,
     filePath: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     media: any,
     timeoutMs: number = 60000
   ): Promise<void> {
@@ -280,6 +300,7 @@ export class TelegramParserService {
 
   private async downloadThumbnail(
     client: TelegramClient,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     thumbnail: any,
     timeoutMs: number = 30000
   ): Promise<Buffer | null> {
@@ -300,7 +321,7 @@ export class TelegramParserService {
     }
   }
 
-  private canGetFileId(thumbnail: any): boolean {
+  private canGetFileId(thumbnail: TelegramThumbnail): boolean {
     try {
       if (thumbnail.fileId && thumbnail.type !== 'i') {
         return true;
@@ -314,6 +335,7 @@ export class TelegramParserService {
   private async downloadWithRetry(
     client: TelegramClient,
     filePath: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     media: any,
     maxRetries: number = 7,
     timeoutMs: number = 60000
@@ -323,7 +345,8 @@ export class TelegramParserService {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-        await client.downloadToFile(filePath, media);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await client.downloadToFile(filePath, media as any);
         clearTimeout(timeout);
 
         const stats = await fs.stat(filePath);
@@ -425,12 +448,13 @@ export class TelegramParserService {
       );
 
       if (type === 'video' && m.thumbnails && m.thumbnails.length > 0) {
-        const validThumbs = m.thumbnails.filter((t: any) =>
+        const validThumbs = m.thumbnails.filter((t: TelegramThumbnail) =>
           this.canGetFileId(t)
         );
         const videoThumb =
           validThumbs.find(
-            (t: any) => t.type === 'v' || t.type === 'u' || t.isVideo
+            (t: TelegramThumbnail) =>
+              t.type === 'v' || t.type === 'u' || t.isVideo
           ) ||
           validThumbs[0] ||
           m.thumbnails[0];
@@ -526,7 +550,7 @@ export class TelegramParserService {
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
-          const mediaRecord = await pb
+          await pb
             .collection('media')
             .create(formData, { requestKey: null });
 
