@@ -3,16 +3,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import { FastVideo } from './FastVideo';
 
 import type { MediaModalProps } from './MediaModal.types';
 
 export function MediaModal({ media, onClose }: MediaModalProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const next = useCallback(
     (e?: React.MouseEvent) => {
       e?.stopPropagation();
+      setIsLoaded(false);
       setCurrentIndex((p) => (p + 1) % media.length);
     },
     [media.length]
@@ -21,6 +22,7 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
   const prev = useCallback(
     (e?: React.MouseEvent) => {
       e?.stopPropagation();
+      setIsLoaded(false);
       setCurrentIndex((p) => (p - 1 + media.length) % media.length);
     },
     [media.length]
@@ -33,7 +35,6 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
       if (e.key === 'ArrowLeft') prev();
     };
 
-    // Блокируем скролл основной страницы при открытой модалке
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
 
@@ -43,7 +44,6 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
     };
   }, [onClose, next, prev]);
 
-  // Если вдруг массив пустой, не рендерим ничего
   if (!media || media.length === 0) return null;
 
   const current = media[currentIndex];
@@ -52,14 +52,12 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={(e) => {
-        // Закрываем только если кликнули на фон (не на контент)
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
       <div className="relative w-full h-full flex items-center justify-center animate-bounce-in">
-        {/* Кнопка Закрыть */}
         <button
           onClick={onClose}
           className="absolute top-6 right-6 text-white/50 hover:text-white hover:scale-110 active:scale-95 transition-all duration-200 z-[110] p-2 bg-white/10 hover:bg-white/20 rounded-full"
@@ -79,7 +77,6 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           </svg>
         </button>
 
-        {/* Навигация */}
         {media.length > 1 && (
           <>
             <button
@@ -121,35 +118,40 @@ export function MediaModal({ media, onClose }: MediaModalProps) {
           </>
         )}
 
-        {/* Основной контейнер медиа */}
         <div className="relative w-[95vw] h-[90vh] flex items-center justify-center">
           {current.type === 'photo' ? (
             <div className="relative w-full h-full">
+              {!isLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
               <Image
                 src={current.url}
                 alt="Full view"
                 fill
-                unoptimized // Важно для работы с локальным IP PocketBase
-                className="object-contain"
+                unoptimized
+                className={`object-contain transition-opacity duration-300 ${
+                  isLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
                 priority
                 sizes="100vw"
+                onLoad={() => setIsLoaded(true)}
+                onError={() => setIsLoaded(true)}
               />
             </div>
           ) : (
-            <div className="flex items-center justify-center">
-              <FastVideo
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video
                 src={current.url}
-                className="max-w-full max-h-full"
-                autoPlay={true}
-                controls={true}
-                muted={false}
-                lazy={false}
+                controls
+                autoPlay
+                className="max-w-full max-h-full object-contain"
               />
             </div>
           )}
         </div>
 
-        {/* Индикатор количества */}
         <div
           className="absolute bottom-6 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full text-white/90 text-sm backdrop-blur-md font-medium animate-fade-in"
           style={{ animationDelay: '0.2s' }}

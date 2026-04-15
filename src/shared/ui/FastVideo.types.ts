@@ -7,6 +7,7 @@ export interface FastVideoProps {
   playsInline?: boolean;
   controls?: boolean;
   lazy?: boolean;
+  showDuration?: boolean;
   onLoad?: () => void;
   onError?: () => void;
 }

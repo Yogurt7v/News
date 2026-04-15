@@ -53,7 +53,7 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
           <h1 className="text-center text-xl font-semibold mb-2">
@@ -133,7 +133,7 @@ function ResetPasswordForm() {
 
 function ResetPasswordLoader() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8">
           <div className="space-y-4">

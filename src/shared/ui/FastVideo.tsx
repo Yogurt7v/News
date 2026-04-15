@@ -8,6 +8,17 @@ import type { FastVideoProps } from './FastVideo.types';
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1500;
 
+const formatDuration = (seconds: number): string => {
+  if (!isFinite(seconds) || isNaN(seconds)) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
 export function FastVideo({
   src,
   className = '',
@@ -17,6 +28,7 @@ export function FastVideo({
   playsInline = true,
   controls = false,
   lazy = true,
+  showDuration = true,
   onLoad,
   onError,
 }: FastVideoProps) {
@@ -30,6 +42,7 @@ export function FastVideo({
   const [videoError, setVideoError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [key, setKey] = useState(0);
+  const [duration, setDuration] = useState<number | null>(null);
 
   useEffect(() => {
     if (poster) {
@@ -143,10 +156,11 @@ export function FastVideo({
         }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onLoadedMetadata={() => {
+        onLoadedMetadata={(e) => {
           if (!poster && !thumbnailUrl) {
             setIsThumbnailReady(true);
           }
+          setDuration(e.currentTarget.duration);
         }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
@@ -173,6 +187,11 @@ export function FastVideo({
               <path d="M8 5v14l11-7z" />
             </svg>
           </div>
+        </div>
+      )}
+      {showDuration && duration !== null && (
+        <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 rounded-md text-white text-xs font-medium z-40">
+          {formatDuration(duration)}
         </div>
       )}
     </div>

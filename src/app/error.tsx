@@ -18,7 +18,7 @@ export default function ErrorBoundary({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
+    <div className="min-h-dvh flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
       <div className="w-full max-w-md">
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-white/10 shadow-2xl shadow-black/5 overflow-hidden animate-fade-in">
           <div className="p-8 text-center">

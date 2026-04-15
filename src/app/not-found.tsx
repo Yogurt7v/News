@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
+    <div className="min-h-dvh flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-[#0071e3]/5">
       <div className="w-full max-w-md text-center">
         <div className="mb-8 animate-fade-in">
           <div className="w-32 h-32 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-[#0071e3]/10 to-[#0071e3]/5 flex items-center justify-center">

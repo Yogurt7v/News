@@ -65,7 +65,7 @@ function RegisterContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10] px-4">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-100 dark:border-[#2a2a2c] p-8 animate-scale-in">
           <div className="flex justify-center mb-6 animate-fade-in-up">
@@ -220,7 +220,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10]">
+        <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] dark:bg-[#0f0f10]">
           <div className="animate-pulse text-gray-400 text-sm">
             Загрузка формы...
           </div>
