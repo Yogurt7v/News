@@ -7,7 +7,11 @@ export function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <div className="mb-6 animate-fade-in-up">
+    <div
+      id="page-header"
+      className="mb-6 animate-fade-in-up"
+      style={{ scrollMarginTop: 24 }}
+    >
       <div className="bg-white dark:bg-gray-900 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-lg shadow-gray-200/20 dark:shadow-black/30">
         <h1 className="text-2xl font-bold text-foreground">{title}</h1>
         {statsText && (

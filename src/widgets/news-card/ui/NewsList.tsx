@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useState,
-  useTransition,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { NewsCard } from '@/widgets/news-card/ui/NewsCard';
 import { useNewsSubscription } from '@/shared/lib/useNewsSubscription';
@@ -28,11 +22,6 @@ export function NewsList({ initialNews }: NewsListProps) {
   const [newNewsCount, setNewNewsCount] = useState(0);
   const [pendingNewNews, setPendingNewNews] = useState<NewsItem[]>([]);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const searchParams = useSearchParams();
-  const currentChannel = searchParams.get('channel');
-  const currentGroup = searchParams.get('group');
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -62,9 +51,25 @@ export function NewsList({ initialNews }: NewsListProps) {
     fetchToken();
   }, []);
 
+  const searchParams = useSearchParams();
+  const currentChannel = searchParams.get('channel');
+  const currentGroup = searchParams.get('group');
+
   useEffect(() => {
-    setNews(initialNews as PendingNews[]);
-    setHasMore(initialNews.length >= 5);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNews((prev) => {
+      if (prev.length === 0 && initialNews.length > 0) {
+        return initialNews as PendingNews[];
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHasMore((prev) => {
+      if (!prev && initialNews.length >= 5) {
+        return initialNews.length >= 5;
+      }
+      return prev;
+    });
   }, [initialNews]);
 
   const handleNewNews = useCallback(
@@ -149,7 +154,7 @@ export function NewsList({ initialNews }: NewsListProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5" ref={listRef}>
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
       {newNewsCount > 0 && (
         <button
           onClick={showNewNews}
@@ -220,7 +225,9 @@ export function NewsList({ initialNews }: NewsListProps) {
           {hasMore && (
             <button
               onClick={() =>
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+                document
+                  .getElementById('page-header')
+                  ?.scrollIntoView({ behavior: 'smooth' })
               }
               className="py-4 px-4 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
               style={{ animationDelay: `${news.length * 50 + 250}ms` }}
@@ -245,7 +252,11 @@ export function NewsList({ initialNews }: NewsListProps) {
       {!hasMore && news.length > 0 && (
         <div className="flex justify-center text-center py-4">
           <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() =>
+              document
+                .getElementById('page-header')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }
             className="py-4 px-4 gap-2 rounded-2xl bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-out flex items-center justify-center animate-fade-in-up"
           >
             <svg
