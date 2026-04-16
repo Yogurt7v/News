@@ -138,19 +138,25 @@ export function Sidebar() {
   });
 
   const [isScrollingDown, setIsScrollingDown] = useState(false);
-  const lastScrollY = useRef(0);
 
   useEffect(() => {
+    let lastScrollY = 0;
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsScrollingDown(
-        currentScrollY > lastScrollY.current && currentScrollY > 50
-      );
-      lastScrollY.current = currentScrollY;
+      const currentScrollY =
+        document.querySelector('main')?.scrollTop || window.scrollY;
+      const down = currentScrollY > lastScrollY && currentScrollY > 50;
+      setIsScrollingDown(down);
+      lastScrollY = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const main = document.querySelector('main');
+    if (main) {
+      main.addEventListener('scroll', handleScroll, { passive: true });
+      return () => main.removeEventListener('scroll', handleScroll);
+    } else {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
   }, []);
 
   const router = useRouter();

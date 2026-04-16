@@ -174,20 +174,22 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   return (
     <Wallpaper>
-      <div className="flex h-dvh">
-        <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-4 py-6">
-            <PageContent
-              title={pageTitle}
-              statsText={statsText}
-              showHint={!hasSubscriptions && !channel && !group}
-              hasSubscriptions={hasSubscriptions}
-              news={newsItems}
-              isAdmin={isAdmin}
-            />
-          </div>
-        </main>
+      <div className="fixed inset-0 flex flex-col">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <Sidebar />
+          <main className="flex-1 min-w-0 overflow-y-auto touch-pan-y">
+            <div className="max-w-2xl mx-auto px-4 py-6">
+              <PageContent
+                title={pageTitle}
+                statsText={statsText}
+                showHint={!hasSubscriptions && !channel && !group}
+                hasSubscriptions={hasSubscriptions}
+                news={newsItems}
+                isAdmin={isAdmin}
+              />
+            </div>
+          </main>
+        </div>
       </div>
     </Wallpaper>
   );

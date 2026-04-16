@@ -550,9 +550,32 @@ export class TelegramParserService {
           const fileObj = new Blob([uint8Array], { type: m.mimeType });
           formData.append('file', fileObj, m.fileName);
 
-          await pb
-            .collection('media')
-            .create(formData, { requestKey: null });
+          // Retry logic for media upload (3 attempts)
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              await pb
+                .collection('media')
+                .create(formData, { requestKey: null });
+              break;
+            } catch (mediaErr: any) {
+              const errorStatus = mediaErr.status ?? 0;
+              const errorData = mediaErr.data;
+              this.log(
+                `   ⚠️ Попытка ${attempt}/3: ошибка ${errorStatus}, данные: ${JSON.stringify(errorData)}`
+              );
+              if (
+                attempt < 3 &&
+                (errorStatus === 413 ||
+                  errorStatus === 429 ||
+                  errorStatus >= 500 ||
+                  errorStatus === 0)
+              ) {
+                await new Promise((resolve) => setTimeout(resolve, 3000));
+              } else {
+                throw mediaErr;
+              }
+            }
+          }
 
           await fs.unlink(m.tempPath).catch(() => {});
           this.log(
