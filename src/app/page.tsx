@@ -137,10 +137,12 @@ export default async function HomePage({ searchParams }: PageProps) {
         | undefined;
 
       const thumbUrl = thumbnailMap.get(item.id);
-      const mediaWithThumb = media?.map((m, idx) => ({
-        ...m,
-        thumbnailUrl: idx === 0 && thumbUrl ? thumbUrl : undefined,
-      }));
+      const mediaWithThumb = media
+        ?.filter((m) => m.type !== 'thumbnail')
+        .map((m, idx) => ({
+          ...m,
+          thumbnailUrl: idx === 0 && thumbUrl ? thumbUrl : undefined,
+        }));
 
       const source = item.source as string;
       const avatarData = avatarMap.get(source);

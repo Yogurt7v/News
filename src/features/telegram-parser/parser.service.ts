@@ -557,9 +557,10 @@ export class TelegramParserService {
                 .collection('media')
                 .create(formData, { requestKey: null });
               break;
-            } catch (mediaErr: any) {
-              const errorStatus = mediaErr.status ?? 0;
-              const errorData = mediaErr.data;
+            } catch (mediaErr: unknown) {
+              const err = mediaErr as { status?: number; data?: unknown };
+              const errorStatus = err.status ?? 0;
+              const errorData = err.data;
               this.log(
                 `   ⚠️ Попытка ${attempt}/3: ошибка ${errorStatus}, данные: ${JSON.stringify(errorData)}`
               );
@@ -572,7 +573,7 @@ export class TelegramParserService {
               ) {
                 await new Promise((resolve) => setTimeout(resolve, 3000));
               } else {
-                throw mediaErr;
+                throw err;
               }
             }
           }
