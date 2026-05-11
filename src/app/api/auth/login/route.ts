@@ -26,7 +26,10 @@ export async function POST(request: Request) {
       .authWithPassword(email, password);
 
     const res = NextResponse.json(
-      { user: authData.record },
+      {
+        user: authData.record,
+        verified: authData.record.verified,
+      },
       { status: 200 }
     );
     res.headers.set(

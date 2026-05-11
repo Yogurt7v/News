@@ -79,7 +79,14 @@ function RegisterContent() {
         return;
       }
 
-      router.push('/');
+      const data = await res.json();
+      const isVerified = data.verified !== false;
+
+      if (isVerified) {
+        router.push('/');
+      } else {
+        router.push('/auth/pending');
+      }
       router.refresh();
     } catch (err) {
       const message =

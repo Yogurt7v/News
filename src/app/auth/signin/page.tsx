@@ -75,6 +75,13 @@ function SignInContent({
         setError('Неверный email или пароль');
         return;
       }
+
+      const isVerified = (await res.json()).verified;
+      if (isVerified === false) {
+        router.push('/auth/pending');
+        return;
+      }
+
       setIsNavigating(true);
       router.push(callbackUrl);
       router.refresh();

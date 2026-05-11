@@ -38,8 +38,11 @@ export async function GET(request: NextRequest) {
     const authData = await res.json();
     if (!res.ok) throw new Error('PB Auth Failed');
 
+    const isVerified = authData.record?.verified !== false;
+    const redirectUrl = isVerified ? payload.callbackUrl : '/auth/pending';
+
     const finalResponse = NextResponse.redirect(
-      new URL(payload.callbackUrl, request.nextUrl.origin)
+      new URL(redirectUrl, request.nextUrl.origin)
     );
 
     // Сохраняем сессию в формате PocketBase

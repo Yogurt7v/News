@@ -13,6 +13,13 @@ export default async function HomePage({ searchParams }: PageProps) {
     redirect('/auth/signin');
   }
 
+  const isVerified = (
+    pb.authStore.model as unknown as { verified?: boolean }
+  )?.verified;
+  if (isVerified === false) {
+    redirect('/auth/pending');
+  }
+
   const { channel, group } = await searchParams;
 
   const isAdmin =

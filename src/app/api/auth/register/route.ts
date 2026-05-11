@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     const res = NextResponse.json(
       {
         user: authData.record,
+        verified: authData.record.verified,
       },
       { status: 201 }
     );
